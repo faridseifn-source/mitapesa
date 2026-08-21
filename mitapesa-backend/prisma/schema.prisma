@@ -1,0 +1,1045 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KycStatus {
+  NONE
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum WalletType {
+  PERSONAL
+  SHARED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  firstName    String
+  middleName   String?
+  lastName     String
+  email        String   @unique
+  phone        String   @unique
+  passwordHash String
+  language     String   @default("en")
+  // The currency the customer's PFM view runs in (Insights, Budget,
+  // Ledger, receipt/manual entries). NOT a real multi-currency wallet —
+  // the customer's actual spendable balance (Card.balance) stays TZS
+  // regardless, since TIPS/GePG/LUKU are TZS-native rails with no foreign
+  // currency equivalent. A transaction recorded in a different currency
+  // (e.g. a receipt scanned abroad) is converted into this currency for
+  // the customer's records — see Transaction.originalCurrency below.
+  preferredCurrency String @default("TZS")
+  avatarUrl    String?
+  kycStatus    KycStatus @default(NONE)
+  // customer | admin_viewer | admin_support | admin_super — see lib/adminRoles.js
+  // for the hierarchy. Kept as a plain string (not a Prisma enum) so new
+  // tiers can be added without a migration, same reasoning as elsewhere in
+  // this schema.
+  role         String   @default("customer")
+
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime? // TEMPORARY brute-force lockout — self-clears, see auth.service.js
+
+  // Admin-initiated block — a deliberate, permanent (until an admin
+  // reverses it) suspension, distinct from the automatic brute-force
+  // lockout above. Checked at login, independent of failedLoginAttempts.
+  blockedByAdmin Boolean   @default(false)
+  blockedReason  String?
+  blockedAt      DateTime?
+  blockedByUserId String?
+
+  lastLoginAt  DateTime? // powers the admin dashboard's "active users" metric
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  walletMemberships WalletMember[]
+  categories        Category[]
+  budgets           Budget[]
+  card              Card?
+  notifications     Notification[]
+  kycVerification   KycVerification?
+  kycNidaProfile    KycNidaProfile?
+  refreshTokens     RefreshToken[]
+  supportTickets    SupportTicket[]
+
+  walletInvitesReceived WalletInvite[] @relation("WalletInviteInvitee")
+  walletInvitesSent     WalletInvite[] @relation("WalletInviteInviter")
+  virtualCardsOwned     VirtualCard[]  @relation("VirtualCardOwner")
+  virtualCardsHeld      VirtualCard[]  @relation("VirtualCardHolder")
+  qrPayments            QrPayment[]
+  webAuthnCredentials   WebAuthnCredential[]
+  pushSubscriptions     PushSubscription[]
+  pushDeviceTokens      PushDeviceToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Wallet {
+  id        String     @id @default(cuid())
+  type      WalletType
+  name      String?
+  createdAt DateTime   @default(now())
+
+  members      WalletMember[]
+  transactions Transaction[]
+  invites      WalletInvite[]
+  virtualCards VirtualCard[]
+}
+
+model WalletMember {
+  id       String @id @default(cuid())
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  role     String @default("member") // owner | member
+
+  @@unique([walletId, userId])
+}
+
+// Global default categories have userId = null; user-created ones are scoped to a user.
+model Category {
+  id     String  @id @default(cuid())
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+  name   String
+  color  String
+
+  subcategories Subcategory[]
+  budgets       Budget[]
+  transactions  Transaction[]
+
+  @@unique([userId, name])
+}
+
+model Subcategory {
+  id         String   @id @default(cuid())
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+  name       String
+
+  transactions Transaction[]
+
+  @@unique([categoryId, name])
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+  limit      Decimal  @db.Decimal(14, 2)
+  period     String   @default("monthly")
+
+  @@unique([userId, categoryId, period])
+}
+
+model Transaction {
+  id             String       @id @default(cuid())
+  wallet         Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId       String
+  category       Category     @relation(fields: [categoryId], references: [id])
+  categoryId     String
+  subcategory    Subcategory? @relation(fields: [subcategoryId], references: [id])
+  subcategoryId  String?
+  amount         Decimal      @db.Decimal(14, 2) // negative = expense, positive = income — always in the customer's preferredCurrency at the time this was recorded, same as before this field existed
+  // Populated only when this transaction originated in a different
+  // currency (e.g. a receipt scanned while abroad, or a manual entry with
+  // a foreign amount specified) — `amount` above is always the converted
+  // value already in the customer's running currency; these three fields
+  // preserve what the transaction actually was originally, for
+  // transparency and in case the customer's preferred currency changes
+  // later. All three are null for an ordinary same-currency transaction.
+  originalAmount   Decimal? @db.Decimal(14, 2)
+  originalCurrency String?  // ISO 4217 code, e.g. "USD"
+  exchangeRate     Decimal? @db.Decimal(18, 8) // originalCurrency -> amount's currency, at the time this was recorded
+  merchant       String
+  note           String?
+  photoUrl       String?
+  date           DateTime
+  loggedByUserId String
+  loggedByName   String
+  source         String       @default("manual") // manual | scan | voice | import | lipa | gepg | luku | topup_gateway | topup_oct | virtual_card_lipa | virtual_card_gepg | virtual_card_luku | virtual_card_topup | virtual_card
+  reference      String?      // provider/transaction reference — generated server-side, shown on receipts
+  status         String       @default("completed") // completed | pending | failed — failed transactions are never actually persisted today (validated before debit), reserved for when a real provider can return "pending"
+  createdAt      DateTime     @default(now())
+
+  @@index([walletId, date])
+}
+
+model Card {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String   @unique
+  processorRef String?  // opaque id from the card-issuing processor, once real
+  last4        String
+  fullNumberEnc String? // encrypted full 16-digit PAN — only decrypted on-demand via /cards/me/reveal, for entering into external checkout forms
+  cvvEnc        String? // encrypted CVV, same access pattern
+  holderName   String
+  expiry       String
+  frozen       Boolean  @default(false)
+  dailyLimit   Decimal  @db.Decimal(14, 2) @default(500000)
+  controls     Json     @default("{\"online\":true,\"contactless\":true,\"atm\":true}")
+  balance      Decimal  @db.Decimal(14, 2) @default(0) // authoritative only while provider = mock
+
+  activity CardActivity[]
+}
+
+model CardActivity {
+  id     String   @id @default(cuid())
+  card   Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  cardId String
+  type   String   // topup | oct | receive | transfer_out | transfer_in | bank_transfer | lipa | gepg | luku
+  amount Decimal  @db.Decimal(14, 2)
+  label  String
+  sub    String?
+  transferGroupId String? // links this entry to its paired debit/credit on the other side of a card-to-card transfer, for reconciliation
+  date   DateTime @default(now())
+
+  @@index([cardId, date])
+}
+
+model KycVerification {
+  id             String    @id @default(cuid())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String    @unique
+  nidaNumberHash String    // never store the raw NIDA number
+  sessionRef     String?   // opaque ref from the KYC provider for the in-flight attempt
+  status         KycStatus @default(PENDING)
+  method         String?   // otp | kbv
+  attempts       Int       @default(0)
+  verifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Notification {
+  id      String   @id @default(cuid())
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  type    String
+  title   String
+  message String
+  read    Boolean  @default(false)
+  date    DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+// Deliberately not a foreign-key relation to User: an audit trail should
+// survive independently of the account record it describes.
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  // null for pre-account events, e.g. phone verification before registration
+  action    String   // e.g. "auth.login.success", "card.topup.gateway", "kyc.otp.verified"
+  amount    Decimal? @db.Decimal(14, 2)
+  metadata  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+// Ensures a client retry of a money-movement request (double-tap, flaky
+// network, etc.) can't be processed twice — the caller sends an
+// Idempotency-Key header; a repeated key with the same user returns the
+// original stored response instead of re-running the operation.
+model IdempotencyKey {
+  id           String   @id @default(cuid())
+  userId       String
+  key          String
+  statusCode   Int
+  responseBody Json
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, key])
+}
+
+// "Forgot password" tokens — single-use, short-lived, stored as a hash only.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+// Full NIDA demographic record, synced automatically once KYC verification
+// succeeds. Deliberately a separate table from KycVerification (which only
+// tracks the verification attempt itself) so this richer, more sensitive
+// data has its own access boundary — nothing in the regular user-facing API
+// ever joins or returns this table; only the future admin-gated routes do.
+//
+// Every PII field is stored as AES-256-GCM ciphertext (see lib/crypto.js),
+// never in plaintext. Field names carry an "Enc" suffix as a reminder at the
+// schema level that these are not directly queryable/readable values.
+model KycNidaProfile {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  firstNameEnc       String?
+  middleNameEnc      String?
+  lastNameEnc        String?
+  sexEnc             String?
+  dateOfBirthEnc     String?
+  maritalStatusEnc   String?
+  placeOfBirthEnc    String?
+  citizenshipTypeEnc String?
+  nidaPhoneEnc       String? // NIDA-registered phone — additive only, never overwrites the user's primary verified phone
+  regionEnc          String?
+  districtEnc        String?
+  wardEnc            String?
+  villageOrStreetEnc String?
+  photoEnc           String? // encrypted base64 image or image URL, when the provider supplies one
+
+  sourceProvider String    // "mock" | "nida" — which KycProvider implementation supplied this data
+  sourceRef      String?   // opaque, non-sensitive reference from the provider (e.g. their record id)
+  syncStatus     String    @default("pending") // pending | synced | failed
+  syncError      String?   // last error message, if syncStatus = failed — for admin troubleshooting, not customer-facing
+  syncedAt       DateTime? // when the data currently stored was last successfully retrieved
+  lastAttemptAt  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([syncStatus])
+}
+
+// Pre-registration phone verification. No User exists yet when this is
+// created — it's keyed by phone number, not userId. Once verified, it
+// carries a single-use verifyToken that registration must present to prove
+// the phone was actually confirmed (not just typed into a form).
+model PhoneVerification {
+  id          String    @id @default(cuid())
+  phone       String
+  codeHash    String
+  attempts    Int       @default(0)
+  verified    Boolean   @default(false)
+  verifyToken String?
+  usedAt      DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([phone])
+  @@index([verifyToken])
+}
+
+// Mirrors PhoneVerification exactly — the email-based alternative
+// onboarding journey. A longer expiry than phone (30 min vs 10) since
+// checking email genuinely takes longer than reading an SMS that just
+// arrived on the same device.
+model EmailVerification {
+  id          String    @id @default(cuid())
+  email       String
+  codeHash    String
+  attempts    Int       @default(0)
+  verified    Boolean   @default(false)
+  verifyToken String?
+  usedAt      DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+  @@index([verifyToken])
+}
+
+// Proper consent-based wallet invitation — replaces silently adding someone
+// to a shared wallet. The invited user must explicitly accept before a
+// WalletMember row is created.
+model WalletInvite {
+  id     String @id @default(cuid())
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId String
+
+  invitedUser     User   @relation("WalletInviteInvitee", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedUserId   String
+  invitedByUser   User   @relation("WalletInviteInviter", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  invitedByUserId String
+
+  // Requirement 1: the inviter can opt to have a shared add-on card created
+  // automatically the moment this invite is accepted, rather than as a
+  // separate manual step afterward.
+  createAddOnCard Boolean @default(false)
+  addOnCardLabel  String?
+
+  status      String    @default("pending") // pending | accepted | declined | revoked
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  @@index([invitedUserId, status])
+  @@index([walletId])
+}
+
+// A virtual card is always controlled by its `owner` and used by its
+// `holder`. For a parent-linked card these are different people (the
+// primary wallet member controls; the invited member holds/spends). For an
+// independent card owner === holder — the same person controls and uses it,
+// and its walletId is that person's own PERSONAL wallet, which nobody else
+// is a member of, so it's naturally invisible to anyone else through the
+// existing wallet-membership access checks used everywhere else in the API.
+model VirtualCard {
+  id     String @id @default(cuid())
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId String
+
+  owner   User   @relation("VirtualCardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+  holder  User   @relation("VirtualCardHolder", fields: [holderId], references: [id], onDelete: Cascade)
+  holderId String
+
+  type               String   // "parent_linked" | "independent"
+  label              String?
+  last4              String
+  processorRef       String?  // CMS-assigned wallet/account number returned on generation (e.g. BPC SmartVista) — see createVirtualCard in BPC_SMARTVISTA_MAPPING.md
+  fullNumberEnc      String?  // encrypted full 16-digit PAN — only decrypted on-demand via the /reveal endpoint, for entering into external checkout forms
+  cvvEnc             String?  // encrypted CVV, same access pattern
+  expiry             String
+  frozen             Boolean  @default(false)
+  terminated         Boolean  @default(false)
+  dailyLimit         Decimal  @db.Decimal(14, 2) @default(50000)
+  allowedCategoryIds Json?    // array of category id strings the holder may spend against; null = unrestricted
+  controls           Json     @default("{\"online\":true,\"contactless\":true,\"atm\":true}")
+  services           Json     @default("{\"lipa\":true,\"gepg\":true,\"luku\":true,\"topup\":true}") // which service menus the holder may use on this card
+  balance            Decimal  @db.Decimal(14, 2) @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activity VirtualCardActivity[]
+
+  @@index([ownerId])
+  @@index([holderId])
+  @@index([walletId])
+}
+
+model VirtualCardActivity {
+  id                 String      @id @default(cuid())
+  card               VirtualCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  cardId             String
+  type               String      // topup | transfer_to_main | spend | limit_changed | frozen | unfrozen | terminated | categories_updated | services_updated
+  amount             Decimal?    @db.Decimal(14, 2)
+  label              String
+  reference          String?     // matches the linked Transaction's reference, when this activity is a spend
+  transferGroupId    String?     // links this entry to its paired debit/credit on the other side of a card-to-card transfer
+  performedByUserId  String
+  date               DateTime    @default(now())
+
+  @@index([cardId, date])
+}
+
+// Simple key-value store for system-wide configuration, so limits like
+// "max household members" can be changed later through the Administrator
+// Portal without a redeploy. Deliberately not hardcoded into application
+// logic per Requirement 1.
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// Customer requests/disputes — either raised by the customer in-app, or
+// logged by an admin on the customer's behalf (e.g. after a phone call).
+model SupportTicket {
+  id                    String    @id @default(cuid())
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                String
+  category              String    // dispute | inquiry | complaint | fraud
+  subject               String
+  description           String
+  status                String    @default("open") // open | in_progress | resolved | closed
+
+  // Which transaction this dispute concerns, and how it was identified.
+  // Two paths populate these the same way regardless of source:
+  //  1. Picked from the in-app transaction list — relatedTransactionId links
+  //     to the real Transaction row, and the fields below are snapshotted
+  //     from it at filing time (so the dispute record stays accurate even
+  //     if the transaction is later edited or its category changes).
+  //  2. Keyed in manually (e.g. from an exported/printed statement, or an
+  //     older transaction the customer doesn't want to search for) —
+  //     relatedTransactionId stays null, and the fields below are exactly
+  //     what the customer typed.
+  relatedTransactionId  String?
+  disputedReference     String?
+  disputedDate          DateTime?
+  disputedAmount        Decimal?  @db.Decimal(14, 2)
+  disputedMerchant      String?
+
+  assignedAdminId       String?
+  loggedByAdminId       String?   // set when an admin created this on the customer's behalf, not the customer themselves
+  resolutionNotes       String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  resolvedAt            DateTime?
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+// Second factor for admin logins — password auth alone issues no tokens;
+// a one-time code (emailed) must also be verified. Separate from the
+// customer-facing PhoneVerification/PasswordResetToken tables since this
+// gates a fundamentally more sensitive login path.
+model AdminLoginChallenge {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// ------------------------------ QR payments ------------------------------
+// See docs/TANQR_PAYMENT_FLOW.md for the full design this schema implements —
+// TANQR/EMVCo payload parsing, on-us vs off-us routing, and a simulated
+// CBS + TIPS settlement pipeline standing in for the real bank connection.
+
+// Merchant registry, populated the first time a merchant's QR is scanned and
+// reused on subsequent scans. isOnUs is computed once by comparing the
+// QR's Acquirer ID (BOT TANQR Annex 3) against our own partner bank's
+// Acquirer ID (SystemSetting "partner_bank_acquirer_id") — never hardcoded.
+model Merchant {
+  id           String   @id @default(cuid())
+  acquirerId   String   // 5-digit TIPS Acquirer ID from the QR's ID "26"/"01"
+  merchantId   String   // Acquirer-assigned merchant account/code, QR ID "26"/"02"
+  aliasMerchantId String? // 8-digit TIPS Alias Merchant ID (TANQR Annex 3 §2) for manual/feature-phone entry
+  name         String
+  city         String?
+  mcc          String?  // Merchant Category Code, ISO 18245
+  isOnUs       Boolean  // true if acquirerId matches our own partner bank
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  payments QrPayment[]
+
+  @@unique([acquirerId, merchantId])
+  @@index([aliasMerchantId])
+}
+
+// The full lifecycle of a single QR payment, from scan to settlement.
+// `stage` moves forward through a fixed sequence (see qrPayment.service.js);
+// `status` is the outcome once that sequence stops moving forward.
+model QrPayment {
+  id                  String    @id @default(cuid())
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  reference            String    @unique // our own end-to-end transaction reference, shown to the customer
+  merchant             Merchant  @relation(fields: [merchantId], references: [id])
+  merchantId           String
+  pointOfInitiationMethod String // "static" | "dynamic"
+  rawPayload           String    @db.Text // the exact scanned string, kept for audit/dispute purposes
+
+  currency             String    @default("TZS")
+  amount               Decimal   @db.Decimal(14, 2)
+  isOnUs               Boolean
+  categoryId           String    // needed to post the ledger Transaction, at initiation or later pending-resolution
+  feeAmount            Decimal   @default(0) @db.Decimal(14, 2) // charged on top of amount for off-us transfers per FinancialInstitution rules; 0 for on-us
+  mitaPesaFeeAmount    Decimal   @default(0) @db.Decimal(14, 2) // MitaPesa's own platform fee, from the Dynamic Fee Engine
+  taxAmount            Decimal   @default(0) @db.Decimal(14, 2)
+  feeQuoteId           String?   // the exact FeeQuote (and therefore exact FeeRule + version) that priced this payment
+
+  // Which of the customer's cards was debited — exactly one of these is set.
+  cardId               String?
+  virtualCardId         String?
+
+  status               String    @default("processing") // processing | completed | failed | reversed | pending_investigation
+  stage                String    @default("initiated")
+  // initiated -> wallet_held -> cbs_posted -> settlement_debited ->
+  //   on-us:  merchant_credited -> completed
+  //   off-us: tips_initiated -> tips_routed -> awaiting_acquirer_response -> completed
+  // any stage can transition to: failed -> reversed
+
+  cbsPostingRef        String?   // reference from the (simulated) CBS posting
+  tipsInstructionRef   String?   // reference from the (simulated) TIPS rail
+  acquirerResponseRef  String?   // reference from the (simulated) acquiring institution
+  failureReason        String?
+  reversedAt           DateTime?
+  reversalReason        String?
+  transactionId         String?  // linked ledger Transaction row, once the wallet side is posted
+
+  authMethod            String?  // pin | biometric | otp — which factor was used, per risk rules
+  idempotencyKey         String?  @unique
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  completedAt            DateTime?
+
+  events QrPaymentEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// One row per stage transition — the "complete audit log for every stage of
+// the transaction" requirement. Distinct from the general AuditLog (which
+// covers admin/security actions broadly); this is transaction-specific and
+// always includes the payment's full stage history for investigation.
+model QrPaymentEvent {
+  id        String   @id @default(cuid())
+  payment   QrPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  paymentId String
+  stage     String
+  outcome   String   // success | failed | pending
+  detail    Json?
+  createdAt DateTime @default(now())
+
+  @@index([paymentId, createdAt])
+}
+
+// Simulated Core Banking System ledger — stands in for the partner bank's
+// real CBS until that connection exists. Its balances are independent of
+// our own wallet ledger on purpose, so reconciliation between the two is
+// a genuine cross-system check, not just reading the same row twice.
+model CbsLedgerEntry {
+  id           String   @id @default(cuid())
+  reference    String   @unique
+  paymentId    String?
+  entryType    String   // debit_settlement | credit_merchant | debit_tips_transit | reversal
+  amount       Decimal  @db.Decimal(14, 2)
+  accountRef   String   // simulated account identifier (settlement, merchant, or TIPS transit account)
+  status       String   @default("posted") // posted | reversed | failed
+  createdAt    DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([createdAt])
+}
+
+// Simulated TIPS rail ledger, for off-us payments — same reasoning as
+// CbsLedgerEntry: an independent record standing in for the real BOT/TIPS
+// connection, so it's a genuine third leg to reconcile against.
+model TipsLedgerEntry {
+  id           String   @id @default(cuid())
+  reference    String   @unique
+  paymentId    String?
+  acquirerId   String
+  merchantId   String
+  amount       Decimal  @db.Decimal(14, 2)
+  status       String   @default("completed") // completed | pending | failed
+  createdAt    DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([createdAt])
+}
+
+// Flagged when daily reconciliation finds a mismatch between the wallet
+// ledger, CBS, and TIPS — the "exception-handling and investigation queue."
+model ReconciliationException {
+  id           String    @id @default(cuid())
+  paymentId    String?
+  reference    String?
+  reason       String    // e.g. "wallet debited but no CBS posting found"
+  detail       Json?
+  status       String    @default("open") // open | investigating | resolved
+  resolvedByUserId String?
+  resolutionNotes String?
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+
+  @@index([status, createdAt])
+}
+
+// ------------------------------ Biometric login (WebAuthn) ------------------------------
+// A real, account-bound credential — distinct from the lightweight device-
+// capability check used for QR payment step-up confirmation. Each row is
+// one enrolled device/authenticator (Face ID, fingerprint, Windows Hello,
+// a security key, etc).
+model WebAuthnCredential {
+  id           String    @id @default(cuid())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  credentialId String    @unique // base64url — the authenticator's credential identifier
+  publicKey    String    @db.Text // base64url-encoded COSE public key
+  counter      BigInt    @default(0) // signature counter, for clone/replay detection
+  deviceLabel  String?   // e.g. "iPhone — Face ID", set at enrollment
+  transports   String?   // JSON array, e.g. ["internal","hybrid"]
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([userId])
+}
+
+// A short-lived server-side record of the challenge issued for one
+// registration or authentication ceremony — WebAuthn requires the server
+// to remember what challenge it sent so it can verify the signed response
+// matches. Cleared/expired quickly; never reused.
+model WebAuthnChallenge {
+  id        String   @id @default(cuid())
+  userId    String
+  challenge String
+  type      String   // registration | authentication
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ------------------------------ Push notifications ------------------------------
+// A registered browser/device endpoint capable of receiving a Web Push
+// message (RFC 8030) — one row per browser tab/device the customer has
+// enabled notifications on, since a person may use the app on more than
+// one device.
+model PushSubscription {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  endpoint   String    @unique @db.Text
+  p256dh     String    // subscription public key, base64url
+  auth       String    // subscription auth secret, base64url
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([userId])
+}
+
+// Native push (FCM on Android, APNs-via-FCM on iOS eventually) - separate
+// from PushSubscription (web push) since a device token and a web-push
+// endpoint/keys pair are fundamentally different credentials. A user can
+// have both a web subscription and one or more native device tokens at
+// once (e.g. logged in on the website and the native app); sendPushToUser
+// sends to whichever of these exist for that user.
+model PushDeviceToken {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  token      String    @unique @db.Text
+  platform   String    // "android" | "ios"
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([userId])
+}
+
+// ------------------------------ Admin broadcasts ------------------------------
+// A record of every "send to all users" announcement, for admin history —
+// distinct from individual Notification rows (which are per-recipient);
+// this is the one row representing the broadcast itself.
+model Broadcast {
+  id             String   @id @default(cuid())
+  title          String
+  message        String
+  sentByUserId   String
+  recipientCount Int
+  createdAt      DateTime @default(now())
+}
+
+// ------------------------------ Financial institution registry ------------------------------
+// Governs outbound off-us TIPS transfers per institution — not just
+// identification, but the actual business rules an admin configures:
+// whether transfers to this institution are allowed at all, fee
+// structure, and per-transaction/daily limits. On-us vs off-us
+// determination itself stays on the simpler "partner_bank_acquirer_id"
+// setting (SystemSetting) — this registry governs what happens once a
+// payment is already known to be off-us, for whichever institution it's
+// off-us TO.
+model FinancialInstitution {
+  id              String   @id @default(cuid())
+
+  // BOT/TIPS identification (TANQR Annex 3): a 5-digit Acquirer ID is a
+  // 2-digit category code + 3-digit participant code.
+  acquirerId      String   @unique
+  categoryCode    String
+  participantCode String
+
+  name            String   // full legal name, e.g. "CRDB Bank PLC"
+  shortCode       String?  // e.g. "CRDB"
+  swiftCode       String?  // BIC/SWIFT code, for real-world bank identification
+  institutionType String   @default("bank") // bank | mno | microfinance | other
+
+  isActive          Boolean  @default(true)  // false blocks transfers to this institution entirely, independent of transfersEnabled
+  transfersEnabled  Boolean  @default(true)  // the specific "can customers send money here" toggle
+  minTransferAmount Decimal  @default(0) @db.Decimal(14, 2)
+  maxTransferAmount Decimal? @db.Decimal(14, 2) // null = no per-transaction cap beyond global limits
+  dailyTransferLimit Decimal? @db.Decimal(14, 2) // aggregate cap per customer per day, to this institution
+
+  feeType         String   @default("none") // none | fixed | percentage
+  feeFixedAmount  Decimal  @default(0) @db.Decimal(14, 2)
+  feePercentage   Decimal  @default(0) @db.Decimal(5, 2) // e.g. 1.50 = 1.5%
+  feeCapAmount    Decimal? @db.Decimal(14, 2) // caps a percentage-based fee
+
+  notes           String?  // admin-facing free text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// ============================================================
+// DYNAMIC FEE ENGINE
+// Everything below is admin-configurable — no fee, tier, or
+// transaction type is hardcoded in application logic. See
+// docs/FEE_ENGINE.md for the full design and what's deferred.
+// ============================================================
+
+// A monetizable (or monetizable-but-currently-free) transaction category —
+// e.g. "QR_ON_US", "GEPG", "CARD_ISSUANCE_VIRTUAL_ADDON". Admin-created, not
+// a hardcoded enum, so a new chargeable transaction type never needs a
+// deploy. isMonetizable=true with zero active FeeRules is exactly how
+// Shared Wallet stays free today while remaining ready to price later.
+model FeeTransactionType {
+  id            String   @id @default(cuid())
+  code          String   @unique // e.g. "QR_OFF_US" — stable key application code refers to
+  nameEn        String
+  nameSw        String
+  descriptionEn String?
+  descriptionSw String?
+  isActive      Boolean  @default(true)
+  isMonetizable Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  feeRules FeeRule[]
+
+  @@index([isActive])
+}
+
+// A single, versioned, effective-dated pricing rule. Multiple rules can
+// exist for one transaction type (different bands, segments, channels);
+// the engine picks the best match by specificity + priority at quote time.
+model FeeRule {
+  id             String   @id @default(cuid())
+  name           String
+  version        Int      @default(1)
+  parentRuleId   String?  // links versions of "the same" rule together for history/rollback
+
+  transactionTypeId String
+  transactionType   FeeTransactionType @relation(fields: [transactionTypeId], references: [id])
+
+  feeModel    String   // fixed | percentage | tiered | fixed_plus_percentage | zero | display_only
+  fixedAmount Decimal? @db.Decimal(14, 2)
+  percentage  Decimal? @db.Decimal(6, 3)
+  minFee      Decimal? @db.Decimal(14, 2)
+  maxFee      Decimal? @db.Decimal(14, 2)
+
+  // Matching criteria — all optional; null means "matches anything" for
+  // that dimension. Specificity (how many non-null fields matched) plus
+  // `priority` breaks ties when more than one rule could apply.
+  minAmount        Decimal? @db.Decimal(14, 2)
+  maxAmount        Decimal? @db.Decimal(14, 2)
+  channel          String?  // MOBILE_APP | USSD | WEB | ...
+  onUsOffUs        String?  // ON_US | OFF_US
+  customerSegment  String?  // RETAIL | PREMIUM | ...
+  accountType      String?  // PERSONAL | SHARED
+  merchantCategory String?  // MCC, where applicable
+  currency         String   @default("TZS")
+  country          String   @default("TZ")
+  customerId       String?  // an approved individual exception, not a segment
+
+  feePayer      String  @default("CUSTOMER") // CUSTOMER | MERCHANT | PARTNER | MITAPESA
+  taxTreatment  String  @default("NONE")     // NONE | VAT_INCLUSIVE | VAT_EXCLUSIVE
+  vatRate       Decimal @default(0) @db.Decimal(5, 2)
+
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  campaignName  String?
+  priority      Int      @default(100) // lower wins when multiple rules match equally
+
+  status String @default("DRAFT") // DRAFT | PENDING_APPROVAL | APPROVED | ACTIVE | INACTIVE | REJECTED | ARCHIVED
+
+  descriptionEn String?
+  descriptionSw String?
+
+  createdByUserId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tiers    FeeTier[]
+  approval FeeApprovalRequest?
+
+  @@index([transactionTypeId, status])
+  @@index([effectiveFrom, effectiveTo])
+}
+
+// Amount bands for feeModel="tiered" — the engine rejects overlapping or
+// gapped tiers at save time (see lib/feeEngine.js validateTiers).
+model FeeTier {
+  id          String   @id @default(cuid())
+  feeRuleId   String
+  feeRule     FeeRule  @relation(fields: [feeRuleId], references: [id], onDelete: Cascade)
+  minAmount   Decimal  @db.Decimal(14, 2)
+  maxAmount   Decimal? @db.Decimal(14, 2) // null = unbounded top tier
+  feeModel    String   // fixed | percentage
+  fixedAmount Decimal? @db.Decimal(14, 2)
+  percentage  Decimal? @db.Decimal(6, 3)
+  sortOrder   Int      @default(0)
+
+  @@index([feeRuleId])
+}
+
+// Maker-checker: a FeeRule cannot reach ACTIVE status without one of these
+// being APPROVED by someone other than the requester.
+model FeeApprovalRequest {
+  id                String    @id @default(cuid())
+  feeRuleId         String    @unique
+  feeRule           FeeRule   @relation(fields: [feeRuleId], references: [id], onDelete: Cascade)
+  requestedByUserId String
+  status            String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedByUserId  String?
+  reviewNote        String?
+  changeNote        String?
+  previousSnapshot  Json?
+  newSnapshot       Json?
+  createdAt         DateTime  @default(now())
+  reviewedAt        DateTime?
+}
+
+// A purchasable daily/weekly/monthly bundle of eligible transactions.
+model FeeBundle {
+  id                         String    @id @default(cuid())
+  nameEn                     String
+  nameSw                     String
+  descriptionEn              String?
+  descriptionSw              String?
+  validity                   String    // DAILY | WEEKLY | MONTHLY
+  price                      Decimal   @db.Decimal(14, 2)
+  taxTreatment               String    @default("NONE") // NONE | VAT_INCLUSIVE | VAT_EXCLUSIVE — VAT_EXCLUSIVE adds VAT on top of price; VAT_INCLUSIVE treats price as already including it
+  vatRate                    Decimal   @default(0) @db.Decimal(5, 2)
+  includedTransactionTypeIds Json      // array of FeeTransactionType ids
+  includedTransactionCount   Int?      // null = unlimited within validity period
+  customerSegment            String?
+  maxTransactionValue        Decimal?  @db.Decimal(14, 2)
+  fairUsageLimit             Int?
+  autoRenewDefault            Boolean   @default(false)
+  gracePeriodDays             Int       @default(0)
+  rolloverUnused               Boolean   @default(false)
+  cancellable                  Boolean   @default(true)
+  refundable                   Boolean   @default(false)
+  isActive                     Boolean   @default(true)
+  startDate                    DateTime?
+  endDate                       DateTime?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+
+  subscriptions CustomerBundleSubscription[]
+}
+
+model CustomerBundleSubscription {
+  id               String    @id @default(cuid())
+  userId           String
+  bundleId         String
+  bundle           FeeBundle @relation(fields: [bundleId], references: [id])
+  purchasedAt      DateTime  @default(now())
+  expiresAt        DateTime
+  transactionsUsed Int       @default(0)
+  status           String    @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED
+  pricePaid        Decimal   @db.Decimal(14, 2) // the base bundle price actually charged (excludes VAT)
+  vatPaid          Decimal   @default(0) @db.Decimal(14, 2) // VAT actually charged alongside pricePaid — tracked separately so it can be refunded proportionally on cancellation
+  autoRenew        Boolean   @default(false)
+
+  @@index([userId, status])
+}
+
+// A customer-specific waiver — priority 2 in the pricing order, above any
+// promotional rule or bundle.
+model FeeExemption {
+  id                String    @id @default(cuid())
+  userId            String
+  transactionTypeId String?   // null = exempts every transaction type
+  reason            String
+  approvedByUserId  String
+  startDate         DateTime  @default(now())
+  endDate           DateTime?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+
+  @@index([userId, isActive])
+}
+
+// An itemized, expiring quotation returned by the calculation service —
+// the contract described in Section 10. A completed transaction always
+// references the exact quote (and therefore the exact rule + version) that
+// priced it, so "what did we actually charge and why" is never ambiguous.
+model FeeQuote {
+  id                  String    @id @default(cuid())
+  userId              String
+  transactionTypeCode String
+  amount              Decimal   @db.Decimal(14, 2)
+  currency            String    @default("TZS")
+  context             Json      // full request context — channel, onUsOffUs, merchantId, etc; for audit/debugging
+
+  mitaPesaFee   Decimal @db.Decimal(14, 2)
+  partnerFee    Decimal @default(0) @db.Decimal(14, 2)
+  tax           Decimal @default(0) @db.Decimal(14, 2)
+  discount      Decimal @default(0) @db.Decimal(14, 2)
+  bundleBenefit Decimal @default(0) @db.Decimal(14, 2)
+  totalFee      Decimal @db.Decimal(14, 2)
+  totalDebit    Decimal @db.Decimal(14, 2)
+
+  feeRuleId            String?
+  feeRuleVersion        Int?
+  bundleSubscriptionId  String?
+  exemptionId           String?
+
+  disclosureEn String
+  disclosureSw String
+
+  expiresAt   DateTime
+  consumedAt  DateTime? // set once a real transaction actually uses this quote
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+// What was actually collected (or waived/reversed) against a completed
+// transaction — distinct from FeeQuote, which is the pre-transaction
+// estimate. This is the durable financial record.
+model FeeCollectionRecord {
+  id                   String    @id @default(cuid())
+  quoteId              String    @unique
+  transactionRef       String    // the completed transaction's own reference (e.g. QrPayment.reference)
+  transactionTypeCode  String
+  userId               String
+  mitaPesaFeeCollected Decimal   @db.Decimal(14, 2)
+  partnerFeeDisclosed  Decimal   @default(0) @db.Decimal(14, 2)
+  taxCollected         Decimal   @default(0) @db.Decimal(14, 2)
+  status               String    @default("COLLECTED") // COLLECTED | WAIVED | REVERSED | PARTIALLY_REVERSED
+  reversedAmount       Decimal   @default(0) @db.Decimal(14, 2)
+  createdAt            DateTime  @default(now())
+  reversedAt           DateTime?
+
+  @@index([userId])
+  @@index([transactionTypeCode, createdAt])
+}
+
+// Admin-editable exchange rates, always relative to TZS (the app's one
+// real anchor currency — see the multi-currency docs for why). Used by
+// ManualExchangeRateProvider when EXCHANGE_RATE_PROVIDER=manual, which is
+// the sensible default: it needs no external API key or network access
+// to work at all, and an admin can start using multi-currency display
+// immediately, then switch to a live rate API later without a schema or
+// code change — see services/exchange-rate/index.js.
+model ManualExchangeRate {
+  id              String   @id @default(cuid())
+  currency        String   @unique // ISO 4217, e.g. "USD"
+  rateToTZS       Decimal  @db.Decimal(18, 6) // 1 unit of `currency` = this many TZS
+  updatedAt       DateTime @updatedAt
+  updatedByUserId String?
+}
