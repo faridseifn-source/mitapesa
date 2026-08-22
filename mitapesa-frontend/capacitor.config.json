@@ -1,0 +1,13 @@
+{
+  "appId": "com.dugapay.mitapesa",
+  "appName": "MitaPesa",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https",
+    "hostname": "localhost"
+  },
+  "ios": {
+    "contentInset": "automatic"
+  }
+}
