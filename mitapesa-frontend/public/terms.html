@@ -17,6 +17,8 @@
     --border: #E4E0D3;
     --accent: #1F6F50;
     --accent-soft: #E4F0E9;
+    --gold: #C4913C;
+    --gold-soft: #F6ECD8;
   }
   * { box-sizing: border-box; }
   body {
@@ -61,8 +63,22 @@
   .dates {
     color: var(--ink-faint);
     font-size: 13px;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.5rem;
   }
+  .scope-note {
+    background: var(--gold-soft);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .scope-note p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .scope-note strong { color: var(--gold); }
   .card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -124,33 +140,37 @@
   <h1>Terms and Conditions</h1>
   <div class="dates">Effective date: August 26, 2026 &nbsp;·&nbsp; Last updated: August 26, 2026</div>
 
+  <div class="scope-note">
+    <p><strong>Current scope:</strong> MitaPesa is currently offered as a personal finance management tool only. Payment, top-up, and transfer features shown elsewhere in the app are not yet active, and will require you to accept updated terms once they launch. See Section 1 for full details.</p>
+  </div>
+
   <div class="card">
 
     <h2>1. Acceptance of these Terms</h2>
     <p>These Terms and Conditions ("<strong>Terms</strong>") form a binding agreement between you and Duga Pay ("<strong>Duga Pay</strong>," "<strong>we</strong>," "<strong>us</strong>," or "<strong>our</strong>") governing your access to and use of the MitaPesa mobile application and related services (together, the "<strong>Service</strong>"). By creating an account or using the Service, you agree to be bound by these Terms. If you do not agree, you must not use the Service.</p>
     <p>Please also review our <a href="/privacy.html">Privacy Policy</a>, which explains how we collect and use your information and forms part of your agreement with us.</p>
+    <p><strong>Current scope of the Service.</strong> MitaPesa is currently offered as a personal finance management tool: budgeting, transaction tracking, spending insights, and related features described in Section 3. It does not currently move real money, process payments, or connect to a bank account or card on your behalf. Card top-ups, merchant and bill payments, and money transfers referenced elsewhere in the app are planned features, pending our banking partner integration, and are not yet active. When these features become available, you will be asked to review and accept additional or updated terms specific to payment services — including terms our banking and payment partners require us to apply — before you can use them. Continuing to use the personal finance features of the Service does not itself constitute acceptance of those future payment terms.</p>
 
     <h2>2. Eligibility</h2>
     <p>To use MitaPesa, you must:</p>
     <ul>
       <li>Be at least 18 years old;</li>
       <li>Be legally capable of entering into a binding contract;</li>
-      <li>Hold a valid Tanzanian mobile number and, where required for identity verification, a valid NIDA record;</li>
-      <li>Not be prohibited from using financial services under Tanzanian law or any applicable sanctions regime.</li>
+      <li>Hold a valid Tanzanian mobile number.</li>
     </ul>
     <p>You may hold only one MitaPesa account. We may request additional information at any time to confirm your continued eligibility.</p>
 
     <h2>3. Description of the Service</h2>
-    <p>MitaPesa provides personal financial management tools and mobile payment services, including:</p>
+    <p>In its current form, MitaPesa provides personal financial management tools, including:</p>
     <ul>
-      <li>A prepaid MitaPesa card with a top-up-able balance;</li>
-      <li>Budgeting, transaction categorization, and spending insight tools;</li>
-      <li>Merchant and bill payments via QR code or reference number ("Lipa"), including payments to government billers (GePG) and prepaid electricity purchases (LUKU);</li>
-      <li>Transfers to other MitaPesa cardholders and to bank accounts via the Tanzania Instant Payment System (TIPS);</li>
-      <li>Optional Shared Household Wallets and linked add-on cards for family members;</li>
-      <li>Optional transactional fee bundles.</li>
+      <li>Manual, voice-assisted, and receipt-scan-assisted transaction logging;</li>
+      <li>Custom categories and subcategories for organizing your spending;</li>
+      <li>Monthly budgeting tools and spending limit tracking;</li>
+      <li>Spending insights, trends, and category breakdowns;</li>
+      <li>CSV export of your transaction history;</li>
+      <li>Optional Shared Household Wallets, allowing you and family members to log and view shared spending together.</li>
     </ul>
-    <p>We may add, modify, suspend, or discontinue features of the Service at any time, with notice where reasonably practicable.</p>
+    <p>We may add, modify, suspend, or discontinue features of the Service at any time, with notice where reasonably practicable. As noted in Section 1, features involving real money movement will be introduced under separate or updated terms.</p>
 
     <h2>4. Your account</h2>
     <p>You are responsible for:</p>
@@ -160,66 +180,53 @@
       <li>All activity that occurs under your account, whether or not you authorized it, except where caused by our fault or a security failure on our part;</li>
       <li>Notifying us immediately at the contact details below if you suspect unauthorized access to your account, or loss or theft of a device with the app installed.</li>
     </ul>
-    <p><strong>Biometric login.</strong> If you enable Face ID or fingerprint login, you are responsible for ensuring only your own biometric data is enrolled on your device for this purpose. Enrolling another person's biometric data on your device gives that person the ability to access your account and funds.</p>
+    <p><strong>Biometric login.</strong> If you enable Face ID or fingerprint login, you are responsible for ensuring only your own biometric data is enrolled on your device for this purpose. Enrolling another person's biometric data on your device gives that person the ability to access your account.</p>
 
-    <h2>5. Identity verification (KYC)</h2>
-    <p>For transactions above our verification threshold (currently TZS 50,000), we are required by law to confirm your identity before completing the transaction. This may involve verifying your NIDA record, a one-time code sent to your registered number, or security questions.</p>
-    <p>We may decline, delay, reverse, or limit any transaction where identity verification cannot be completed, where information provided appears inaccurate, or where required by applicable anti-money-laundering law.</p>
+    <h2>5. Shared Wallets</h2>
+    <p>If you create or join a Shared Household Wallet, you acknowledge that other members of that wallet can view spending logged to it, including which member logged it. This feature is currently a shared tracking and visibility tool only; it does not involve the transfer of real funds between members. Duga Pay is not responsible for disputes between household members over shared spending or budgeting decisions.</p>
 
-    <h2>6. Fees and charges</h2>
-    <p>Certain transactions carry a fee, which may include a MitaPesa service fee, a partner institution fee, and applicable VAT, as disclosed to you before you confirm the transaction. You may reduce or eliminate certain fees by subscribing to a transactional bundle, on the terms disclosed at the time of purchase.</p>
-    <p>We may change our fees from time to time. Where required by law, we will give you reasonable notice before a fee change takes effect on transactions you make afterward; fees already charged are not affected retroactively.</p>
-
-    <h2>7. Transaction limits and authentication</h2>
-    <p>We apply daily spending limits and risk-based authentication to protect your account. Depending on the amount and your account's risk profile, we may require your password, biometric confirmation, or a one-time code before completing a transaction. We may decline a transaction, or ask for additional verification, at our reasonable discretion to prevent fraud.</p>
-    <p>Payments to other MitaPesa cardholders and eligible merchants may settle instantly. Payments routed through TIPS to other banks depend on the receiving bank's own processing and may take longer, or in rare cases fail or be reversed after initial processing; where this happens, we will credit your balance back in accordance with these Terms.</p>
-
-    <h2>8. Shared Wallets and add-on cards</h2>
-    <p>If you create or join a Shared Household Wallet, you acknowledge that other members of that wallet can view transactions logged to it, including which member logged them. The wallet owner may issue linked add-on cards to other members; the owner funds and controls those cards, including the ability to set spending limits, freeze, or terminate them. Duga Pay is not responsible for disputes between members of a shared wallet over shared spending.</p>
-
-    <h2>9. Prohibited uses</h2>
+    <h2>6. Prohibited uses</h2>
     <p>You must not use the Service to:</p>
     <ul>
-      <li>Engage in fraud, money laundering, terrorist financing, or any other illegal financial activity;</li>
-      <li>Purchase or facilitate the sale of illegal goods or services;</li>
+      <li>Provide false or misleading information;</li>
       <li>Attempt to gain unauthorized access to another person's account or to our systems;</li>
       <li>Reverse-engineer, decompile, or interfere with the operation or security of the Service;</li>
-      <li>Provide false or misleading identity or account information.</li>
+      <li>Use the Service for any unlawful purpose.</li>
     </ul>
-    <p>We may suspend or terminate your account, decline transactions, and report activity to relevant authorities where we reasonably believe this section has been violated.</p>
+    <p>We may suspend or terminate your account where we reasonably believe this section has been violated.</p>
 
-    <h2>10. Disputes and unauthorized transactions</h2>
-    <p>If you believe a transaction was made in error, is unauthorized, or should be disputed, contact us as soon as possible through the in-app support feature, providing as much detail as you can. We will investigate in good faith and aim to resolve disputes within a reasonable time. You agree to cooperate with any investigation, including providing information reasonably requested by us or by a partner bank or payment scheme.</p>
+    <h2>7. Support and feedback</h2>
+    <p>If you have a question, complaint, or issue with the Service, you can reach us through the in-app support feature or the contact details below. We will investigate in good faith and aim to respond within a reasonable time.</p>
 
-    <h2>11. Service availability</h2>
-    <p>We aim to keep the Service available at all times but do not guarantee uninterrupted or error-free operation. The Service depends in part on third-party systems we do not control, including TIPS, GePG, LUKU, NIDA, partner banks, and mobile network operators, and we are not liable for outages, delays, or errors originating from those systems.</p>
+    <h2>8. Service availability</h2>
+    <p>We aim to keep the Service available at all times but do not guarantee uninterrupted or error-free operation. We are not liable for outages, delays, or errors arising from circumstances beyond our reasonable control.</p>
 
-    <h2>12. Limitation of liability</h2>
+    <h2>9. Limitation of liability</h2>
     <p>To the maximum extent permitted by Tanzanian law:</p>
     <ul>
       <li>We are not liable for indirect, incidental, or consequential losses arising from your use of the Service;</li>
-      <li>We are not liable for losses caused by circumstances beyond our reasonable control, including third-party system failures, network outages, or events of force majeure;</li>
-      <li>Our total liability to you for any claim arising from the Service is limited to the amount of the transaction giving rise to the claim, except where a higher amount is required by law or results from our fraud or willful misconduct.</li>
+      <li>We are not liable for losses caused by circumstances beyond our reasonable control, including network outages or events of force majeure;</li>
+      <li>Our total liability to you for any claim arising from the Service is limited to the greater of the amount you have paid us in the preceding twelve months, or a nominal amount, except where a higher amount is required by law or results from our fraud or willful misconduct.</li>
     </ul>
     <p>Nothing in these Terms limits any liability that cannot lawfully be limited or excluded, including liability arising from our own fraud or gross negligence.</p>
 
-    <h2>13. Suspension and termination</h2>
-    <p>We may suspend or close your account, at our reasonable discretion, where we suspect fraud, a violation of these Terms, a legal or regulatory requirement, or a risk to you, other users, or Duga Pay. Where practicable, we will notify you and provide a way to withdraw any remaining balance, subject to any legal restrictions.</p>
-    <p>You may close your account at any time by contacting support, subject to settling any outstanding balance or pending transactions first.</p>
+    <h2>10. Suspension and termination</h2>
+    <p>We may suspend or close your account, at our reasonable discretion, where we suspect a violation of these Terms, a legal or regulatory requirement, or a risk to you, other users, or Duga Pay. Where practicable, we will notify you before doing so.</p>
+    <p>You may close your account at any time by contacting support.</p>
 
-    <h2>14. Intellectual property</h2>
+    <h2>11. Intellectual property</h2>
     <p>The MitaPesa name, logo, app, and all associated content and software are owned by Duga Pay or our licensors and are protected by applicable intellectual property law. Nothing in these Terms grants you any right to use our trademarks or branding without our prior written consent.</p>
 
-    <h2>15. Changes to these Terms</h2>
-    <p>We may update these Terms from time to time. If we make material changes, we will notify you through the app or by other reasonable means before the changes take effect. Your continued use of the Service after changes take effect constitutes acceptance of the updated Terms.</p>
+    <h2>12. Changes to these Terms</h2>
+    <p>We may update these Terms from time to time, including to introduce terms governing new features such as payments, transfers, and bill payments as described in Section 1. If we make material changes, we will notify you through the app or by other reasonable means before the changes take effect. Your continued use of the Service after changes take effect constitutes acceptance of the updated Terms.</p>
 
-    <h2>16. Governing law and dispute resolution</h2>
+    <h2>13. Governing law and dispute resolution</h2>
     <p>These Terms are governed by the laws of the United Republic of Tanzania. Any dispute arising from these Terms or your use of the Service shall be subject to the exclusive jurisdiction of the courts of Tanzania, unless otherwise required by applicable consumer protection law.</p>
 
-    <h2>17. Severability</h2>
+    <h2>14. Severability</h2>
     <p>If any provision of these Terms is found to be unenforceable, the remaining provisions will continue in full force and effect.</p>
 
-    <h2>18. Contact us</h2>
+    <h2>15. Contact us</h2>
     <p>If you have questions about these Terms, please contact us at:</p>
     <div class="contact-block">
       <p><strong>Duga Pay</strong></p>
@@ -228,7 +235,7 @@
     </div>
 
     <div class="disclaimer">
-      This document reflects MitaPesa's actual functionality as of the date above. Because it establishes a binding financial services agreement covering fees, liability, and dispute resolution, Duga Pay recommends periodic legal review to ensure ongoing compliance with applicable Tanzanian law.
+      This document reflects the personal finance management features of MitaPesa currently available at launch. It is intended to be updated once payment, transfer, and identity-verification features become available through our banking partner, at which point additional clauses — including any required by that partner — will be incorporated and presented to customers for acceptance.
     </div>
 
   </div>
