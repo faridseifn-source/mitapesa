@@ -82,6 +82,7 @@ model User {
   walletMemberships WalletMember[]
   categories        Category[]
   budgets           Budget[]
+  budgetLimitHistory BudgetLimitHistory[]
   card              Card?
   notifications     Notification[]
   kycVerification   KycVerification?
@@ -144,6 +145,7 @@ model Category {
 
   subcategories Subcategory[]
   budgets       Budget[]
+  budgetLimitHistory BudgetLimitHistory[]
   transactions  Transaction[]
 
   @@unique([userId, name])
@@ -170,6 +172,31 @@ model Budget {
   period     String   @default("monthly")
 
   @@unique([userId, categoryId, period])
+}
+
+// Records every distinct value a budget limit has ever held, with the date
+// it took effect. The Budget model above only ever stores the *current*
+// value — there was previously no way to know what a limit was last month,
+// which is what "lifetime budget vs. lifetime limit" on the Home hero card
+// needs: it isn't valid to just multiply today's limit by however many
+// months the customer has used the app, since that's wrong the moment a
+// limit is ever changed. A new row here is written every time a limit is
+// created or changed (see budgets.routes.js), never edited or deleted, so
+// this is an honest, append-only history rather than another mutable
+// snapshot. For months before this table existed, budgets.service.js
+// falls back to the earliest known value per category — see the comment
+// there for that assumption spelled out.
+model BudgetLimitHistory {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId    String
+  limit         Decimal  @db.Decimal(14, 2)
+  period        String   @default("monthly")
+  effectiveFrom DateTime @default(now())
+
+  @@index([userId, categoryId, effectiveFrom])
 }
 
 model Transaction {
