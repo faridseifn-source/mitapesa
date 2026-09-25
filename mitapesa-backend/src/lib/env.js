@@ -80,6 +80,7 @@ module.exports = {
     voiceParser: process.env.VOICE_PARSER_PROVIDER || "mock",
     transcription: process.env.TRANSCRIPTION_PROVIDER || "mock",
     paymentGateway: process.env.PAYMENT_GATEWAY_PROVIDER || "mock",
+    analytics: process.env.ANALYTICS_PROVIDER || "mock",
     exchangeRate: process.env.EXCHANGE_RATE_PROVIDER || "manual",
   },
 

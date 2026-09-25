@@ -50,6 +50,10 @@ const DEFAULTS = {
   // feature is unavailable to customers (directs them to manual entry)
   // rather than silently falling back to any kind of placeholder data.
   receipt_ocr_enabled: "true",
+  // Admin kill switch for AI analytics ("Ask AI") specifically — when
+  // off, the feature is unavailable to customers, same posture as
+  // voice_parsing_enabled and receipt_ocr_enabled above.
+  analytics_enabled: "true",
   // Admin kill switch for the customer-facing transaction/insights export
   // specifically — unrelated to the card statement export, which has its
   // own separate flow and isn't affected by this.
@@ -121,6 +125,20 @@ const DEFAULTS = {
   // handling path be genuinely tested before a real payment gateway is
   // connected. Zero by default (every simulated charge succeeds).
   voice_credit_purchase_simulated_failure_rate: "0",
+
+  // AI analytics ("Ask AI") — same cost-control pattern as voice logging
+  // above, entirely independent settings (its own free limit, ceiling,
+  // promo, pricing) since it's a different feature with different cost
+  // characteristics — cheaper per use than voice (no audio transcription
+  // involved), so a higher free allowance and lower price are reasonable
+  // starting defaults, distinct from voice's own numbers. See
+  // lib/aiUsage.js, which enforces all of this generically by feature.
+  analytics_free_monthly_limit: "10",
+  analytics_monthly_spend_ceiling_usd: "20",
+  analytics_promo_free_until: "",
+  analytics_credit_pack_size: "20",
+  analytics_credit_pack_price_tzs: "3000",
+  analytics_credit_purchase_simulated_failure_rate: "0",
 };
 
 async function getSetting(key) {

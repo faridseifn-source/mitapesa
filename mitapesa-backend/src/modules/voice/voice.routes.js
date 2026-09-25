@@ -10,7 +10,7 @@ const { getVoiceParserProvider } = require("../../services/voiceParser");
 const { getTranscriptionProvider } = require("../../services/transcription");
 const { convertToTZS } = require("../../lib/currencyConversion");
 const { writeAudit } = require("../../lib/audit");
-const { checkVoiceUsageAllowed, recordVoiceUsage, purchaseVoiceCredits } = require("../../lib/aiUsage");
+const { checkUsageAllowed, recordUsage, purchaseCredits } = require("../../lib/aiUsage");
 
 const router = Router();
 router.use(requireAuth);
@@ -58,7 +58,7 @@ router.get(
     if (!enabled) {
       return res.json({ allowed: false, reason: "Voice logging is currently turned off — please add this expense manually.", canPurchaseCredits: false });
     }
-    const usageCheck = await checkVoiceUsageAllowed(req.userId);
+    const usageCheck = await checkUsageAllowed(req.userId, "voice");
     res.json(usageCheck);
   })
 );
@@ -84,7 +84,7 @@ router.post(
     // this check is to avoid incurring the cost in the first place once
     // a customer's allowance or the account's monthly ceiling is reached,
     // not to bill first and ask questions later.
-    const usageCheck = await checkVoiceUsageAllowed(req.userId);
+    const usageCheck = await checkUsageAllowed(req.userId, "voice");
     if (!usageCheck.allowed) {
       throw forbidden(usageCheck.reason, {
         canPurchaseCredits: Boolean(usageCheck.canPurchaseCredits),
@@ -121,7 +121,7 @@ router.post(
         // against the customer's allowance and the account's ceiling —
         // recorded here rather than skipped, same principle as any other
         // real provider call in this file.
-        await recordVoiceUsage(req.userId, totalCostUsd, usageCheck.usingCreditId);
+        await recordUsage(req.userId, "voice", totalCostUsd, usageCheck.usingCreditId);
         return res.json({ transcript: "", expenses: [], warnings: [] });
       }
     }
@@ -140,7 +140,7 @@ router.post(
       // still genuinely happen and cost money even though parsing then
       // failed — that real cost is recorded before the error is thrown,
       // not silently dropped just because the later step didn't succeed.
-      await recordVoiceUsage(req.userId, totalCostUsd, usageCheck.usingCreditId);
+      await recordUsage(req.userId, "voice", totalCostUsd, usageCheck.usingCreditId);
       throw badRequest("We couldn't make sense of that — please try again, or add this expense manually.");
     }
 
@@ -177,7 +177,7 @@ router.post(
     await writeAudit(req.userId, "voice.parsed", {
       ip: req.ip, expenseCount: expenses.length, warnings: result.warnings.length, viaAudio: Boolean(input.audioBase64),
     });
-    await recordVoiceUsage(req.userId, totalCostUsd, usageCheck.usingCreditId);
+    await recordUsage(req.userId, "voice", totalCostUsd, usageCheck.usingCreditId);
 
     // transcript is echoed back so the client can show what it actually
     // heard — necessary now that audio-based requests don't have the
@@ -199,7 +199,7 @@ router.post(
   "/credits/purchase",
   parseLimiter,
   asyncHandler(async (req, res) => {
-    const result = await purchaseVoiceCredits(req.userId);
+    const result = await purchaseCredits(req.userId, "voice", "voice expense logging");
     await writeAudit(req.userId, "voice.credits_purchase", { ip: req.ip, success: result.success, creditsPurchased: result.creditsPurchased });
     if (!result.success) throw badRequest(result.failureReason);
     res.json({ creditsPurchased: result.creditsPurchased });

@@ -1119,8 +1119,8 @@ model AiUsageLog {
   @@index([feature, monthKey])
 }
 
-// A customer paying to unlock more voice logging right now, rather than
-// waiting for their free monthly allowance to reset — via a payment
+// A customer paying to unlock more AI feature usage right now, rather
+// than waiting for their free monthly allowance to reset — via a payment
 // gateway where MitaPesa is the merchant (see services/paymentGateway),
 // deliberately not the partner bank's prepaid card wallet the rest of
 // this app's fee deductions use. That relationship requires the partner
@@ -1130,11 +1130,15 @@ model AiUsageLog {
 // that banking partnership. creditsUsed increments as credits are
 // actually consumed (see lib/aiUsage.js) — this record is never deleted
 // or decremented once purchased, so it doubles as this customer's
-// purchase history, not just a live balance.
+// purchase history, not just a live balance. feature ("voice",
+// "analytics", ...) keeps this one table reusable across AI features
+// rather than one table per feature — defaults to "voice" since every
+// row created before this field existed was, in fact, a voice purchase.
 model VoiceCreditPurchase {
   id               String   @id @default(cuid())
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId           String
+  feature          String   @default("voice")
   creditsPurchased Int
   creditsUsed      Int      @default(0)
   amountPaidTzs    Decimal  @db.Decimal(14, 2)
@@ -1142,5 +1146,5 @@ model VoiceCreditPurchase {
   status           String   @default("succeeded") // "succeeded" | "failed" — the mock provider always succeeds synchronously; a real gateway may need "pending" too, added when that integration actually happens
   createdAt        DateTime @default(now())
 
-  @@index([userId, status])
+  @@index([userId, feature, status])
 }

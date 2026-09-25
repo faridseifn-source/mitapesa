@@ -12,7 +12,7 @@ const { sendPushToUser } = require("../../lib/push");
 const { publicUser } = require("../../lib/serialize");
 const authService = require("../auth/auth.service");
 const { getSetting, setSetting, DEFAULTS } = require("../../lib/settings");
-const { currentMonthKey, getVoiceCreditSummary, clearVoiceCredits } = require("../../lib/aiUsage");
+const { currentMonthKey, getCreditSummary, clearCredits } = require("../../lib/aiUsage");
 const { computeStatement } = require("../../lib/statement");
 const { statementToCsv, sendCsv } = require("../../lib/csv");
 const { runReconciliation } = require("../../lib/reconciliation");
@@ -583,9 +583,11 @@ router.get(
   })
 );
 
-// GET /admin/voice-credits/:userId — a specific customer's full voice-
-// credit picture: total purchased, total used, remaining balance, and
-// every individual purchase (including failed attempts, for a complete
+// GET /admin/voice-credits/:userId?feature=analytics — a specific
+// customer's full credit picture for the given AI feature (defaults to
+// "voice" if not specified, for backward compatibility with existing
+// callers): total purchased, total used, remaining balance, and every
+// individual purchase (including failed attempts, for a complete
 // picture). This is what was missing when a customer's leftover credits
 // from earlier testing silently kept covering requests after the free
 // allowance was lowered, with no way to see why.
@@ -593,19 +595,21 @@ router.get(
   "/voice-credits/:userId",
   asyncHandler(async (req, res) => {
     const { userId } = req.params;
+    const feature = req.query.feature || "voice";
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, firstName: true, lastName: true, email: true } });
     if (!user) throw notFound("Customer not found");
-    const summary = await getVoiceCreditSummary(userId);
-    res.json({ user: { id: user.id, name: `${user.firstName} ${user.lastName}`, email: user.email }, ...summary });
+    const summary = await getCreditSummary(userId, feature);
+    res.json({ user: { id: user.id, name: `${user.firstName} ${user.lastName}`, email: user.email }, feature, ...summary });
   })
 );
 
-// POST /admin/voice-credits/:userId/clear — super admin only: marks a
-// customer's unused purchased credits as fully consumed, so the free
-// monthly allowance can actually be tested cleanly without a leftover
-// test purchase silently covering every request. Never deletes the
-// purchase records themselves — what was actually charged (even to the
-// mock gateway) stays as real history; this only changes what's left to
+// POST /admin/voice-credits/:userId/clear?feature=analytics — super
+// admin only: marks a customer's unused purchased credits for the given
+// feature (defaults to "voice") as fully consumed, so the free monthly
+// allowance can actually be tested cleanly without a leftover test
+// purchase silently covering every request. Never deletes the purchase
+// records themselves — what was actually charged (even to the mock
+// gateway) stays as real history; this only changes what's left to
 // spend, not what happened. Audit-logged the same as any other admin
 // action that changes a customer's entitlements.
 router.post(
@@ -613,10 +617,11 @@ router.post(
   requireAdminRole("admin_super"),
   asyncHandler(async (req, res) => {
     const { userId } = req.params;
+    const feature = req.query.feature || "voice";
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
     if (!user) throw notFound("Customer not found");
-    const result = await clearVoiceCredits(userId);
-    await writeAudit(req.userId, "admin.voice_credits_cleared", { ip: req.ip, targetUserId: userId, clearedCount: result.clearedCount });
+    const result = await clearCredits(userId, feature);
+    await writeAudit(req.userId, "admin.credits_cleared", { ip: req.ip, targetUserId: userId, feature, clearedCount: result.clearedCount });
     res.json(result);
   })
 );
