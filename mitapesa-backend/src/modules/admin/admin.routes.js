@@ -13,6 +13,7 @@ const { publicUser } = require("../../lib/serialize");
 const authService = require("../auth/auth.service");
 const { getSetting, setSetting, DEFAULTS } = require("../../lib/settings");
 const { currentMonthKey, getCreditSummary, clearCredits } = require("../../lib/aiUsage");
+const { convertToTZS } = require("../../lib/currencyConversion");
 const { computeStatement } = require("../../lib/statement");
 const { statementToCsv, sendCsv } = require("../../lib/csv");
 const { runReconciliation } = require("../../lib/reconciliation");
@@ -589,7 +590,71 @@ router.get(
   })
 );
 
-// GET /admin/voice-credits/:userId?feature=analytics — a specific
+// GET /admin/ai-usage/summary — the combined picture across every AI
+// feature (voice logging, analytics) that shares the underlying OpenAI
+// account: total real spend converted into TZS (so it's directly
+// comparable to revenue, which is charged in TZS), total revenue, and
+// the actual net position — revenue minus cost — both per feature and
+// combined. Voice and analytics remain two independent budgets for
+// enforcement purposes (see lib/aiUsage.js and each feature's own
+// settings) — this endpoint doesn't change that, it's purely a combined
+// reporting view so the account's true total OpenAI exposure, and
+// whether this revenue stream is actually profitable, don't require
+// manually adding together two separate tabs.
+router.get(
+  "/ai-usage/summary",
+  asyncHandler(async (req, res) => {
+    const monthKey = currentMonthKey();
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const features = ["voice", "analytics"];
+
+    const perFeature = await Promise.all(
+      features.map(async (feature) => {
+        const [totals, ceilingUsd, revenue] = await Promise.all([
+          prisma.aiUsageLog.aggregate({ where: { feature, monthKey }, _sum: { estimatedCostUsd: true }, _count: true }),
+          getSetting(`${feature}_monthly_spend_ceiling_usd`),
+          prisma.voiceCreditPurchase.aggregate({
+            where: { feature, status: "succeeded", createdAt: { gte: monthStart } },
+            _sum: { amountPaidTzs: true },
+          }),
+        ]);
+        const costUsd = Number(totals._sum.estimatedCostUsd || 0);
+        const revenueTzs = Number(revenue._sum.amountPaidTzs || 0);
+        // Converted via this app's own configured exchange rate (see
+        // Exchange Rates in the admin dashboard) — the same rate every
+        // other USD-to-TZS conversion in this app uses, not a separate,
+        // hardcoded one just for this report.
+        const { amount: costTzs } = await convertToTZS({ amount: costUsd, currency: "USD" });
+        return {
+          feature,
+          requests: totals._count,
+          costUsd,
+          costTzs,
+          ceilingUsd: Number(ceilingUsd) || 0,
+          revenueTzs,
+          netTzs: revenueTzs - costTzs,
+        };
+      })
+    );
+
+    const combined = perFeature.reduce(
+      (acc, f) => ({
+        requests: acc.requests + f.requests,
+        costUsd: acc.costUsd + f.costUsd,
+        costTzs: acc.costTzs + f.costTzs,
+        revenueTzs: acc.revenueTzs + f.revenueTzs,
+        netTzs: acc.netTzs + f.netTzs,
+      }),
+      { requests: 0, costUsd: 0, costTzs: 0, revenueTzs: 0, netTzs: 0 }
+    );
+
+    res.json({
+      monthKey,
+      combined,
+      byFeature: Object.fromEntries(perFeature.map((f) => [f.feature, f])),
+    });
+  })
+);
 // customer's full credit picture for the given AI feature (defaults to
 // "voice" if not specified, for backward compatibility with existing
 // callers): total purchased, total used, remaining balance, and every
