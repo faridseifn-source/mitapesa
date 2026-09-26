@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="MitaPesa: jua pesa yako inaenda wapi. Track spending, plan your budget and manage household money in Swahili and English.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MitaPesa">
+<meta property="og:title" content="MitaPesa: Jua pesa yako inaenda wapi">
+<meta property="og:description" content="Andika matumizi yako, panga bajeti na simamia pesa za familia. Track spending, plan your budget and manage household money.">
+<meta property="og:url" content="https://mitapesa.dugapay.com/welcome.html">
+<meta property="og:image" content="https://mitapesa.dugapay.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mitapesa.dugapay.com/og-image.png">
+<link rel="canonical" href="https://mitapesa.dugapay.com/welcome.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNGNkQyNkIiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0Q5QTAzMCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0E5NzIxQSIvPjwvbGluZWFyR3JhZGllbnQ+PHJhZGlhbEdyYWRpZW50IGlkPSJmIiBjeD0iLjQiIGN5PSIuMzUiIHI9Ii44Ij48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxMjgwNUEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwNzQ0MkYiLz48L3JhZGlhbEdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0idXJsKCNnKSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjM5IiBmaWxsPSJ1cmwoI2YpIiBzdHJva2U9IiNGMEM4NUEiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik0xNSA1M0gzM0wzNyA0OEw0MSA1NUw0OCAyMEw1NyA4MEw2MyA0Mkw2NyA1MUg4NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjJDMjRDIiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>MitaPesa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F6F4; --surface:#FFFFFF; --ink:#0D2621; --muted:#4B625C; --line:#D5E1DC;
+  --brand:#0B7A5C; --brand-ink:#FFFFFF; --accent:#F4B12E; --accent-ink:#2A1B00; --soft:#E3F0EA;
+  --warn:#B93E0B; --ok:#0B7A5C;
+  --c-food:#0B7A5C; --c-transport:#2F6FDE; --c-utilities:#D99A10; --c-rent:#B5533C;
+  --c-family:#D9467A; --c-health:#0E9AA7; --c-shopping:#7C8B2A; --c-other:#6B7F79;
+  --f-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0A1613; --surface:#12231F; --ink:#E8F2EE; --muted:#9DB3AB; --line:#24403A;
+    --brand:#38C398; --brand-ink:#04231A; --soft:#163029; --warn:#FB923C; --ok:#38C398;
+    --c-food:#38C398; --c-transport:#6B9BFF; --c-utilities:#F4B12E; --c-rent:#E58A72;
+    --c-family:#F27AA3; --c-health:#4CC9D6; --c-shopping:#B6C74F; --c-other:#93A8A1;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0A1613; --surface:#12231F; --ink:#E8F2EE; --muted:#9DB3AB; --line:#24403A;
+  --brand:#38C398; --brand-ink:#04231A; --soft:#163029; --warn:#FB923C; --ok:#38C398;
+  --c-food:#38C398; --c-transport:#6B9BFF; --c-utilities:#F4B12E; --c-rent:#E58A72;
+  --c-family:#F27AA3; --c-health:#4CC9D6; --c-shopping:#B6C74F; --c-other:#93A8A1;
+}
+*{box-sizing:border-box}
+body{margin:0}[hidden]{display:none!important}img{max-width:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;padding-inline:16px;padding-block:0 84px}
+@media(min-width:721px){body{padding-block-end:0}}
+h1,h2,h3{font-family:var(--f-display);line-height:1.08;text-wrap:balance;margin:0}
+p{margin:0}
+a{color:inherit}
+.wrap{max-width:1120px;margin-inline:auto}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-16px;padding-inline:16px}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:1.3rem;text-decoration:none}
+.mark{width:32px;height:32px;display:grid;place-items:center}
+.top-actions{display:flex;align-items:center;gap:10px}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.lang button{border:0;background:transparent;padding:5px 12px;border-radius:999px;font-weight:700;font-size:.85rem;color:var(--muted)}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:12px 18px;font-weight:700;text-decoration:none;background:var(--brand);color:var(--brand-ink);line-height:1.2}
+.btn.alt{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.small{padding:8px 14px;font-size:.9rem}
+.nav-dl{display:none}
+@media(min-width:721px){.nav-dl{display:inline-flex}}
+
+/* hero */
+.hero{display:grid;gap:32px;padding-block:36px 48px;align-items:center}
+@media(min-width:900px){.hero{grid-template-columns:1.1fr .9fr;gap:56px;padding-block:56px 72px}}
+.hero h1{font-size:clamp(2.3rem,6.4vw,4.1rem);font-weight:800;letter-spacing:-.02em}
+.hero h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--accent) 62%,var(--accent) 92%,transparent 92%)}
+.hero .sub{font-size:1.15rem;color:var(--muted);max-width:34em;margin-top:18px}
+.stores{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.store{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:10px 18px;border-radius:12px;background:var(--brand);color:var(--brand-ink);text-decoration:none;min-width:190px}
+.store small{font-size:.72rem;opacity:.85;letter-spacing:.02em}
+.store b{font-size:1.05rem;font-family:var(--f-display)}
+.store.soon{background:transparent;color:var(--muted);border:1.5px dashed var(--line);cursor:default}
+.note{margin-top:14px;font-size:.92rem;color:var(--muted)}
+
+/* phone demo */
+.phone{background:var(--surface);border:1px solid var(--line);border-radius:32px;padding:18px 18px 16px;max-width:400px;width:100%;margin-inline:auto;box-shadow:0 20px 50px -25px rgba(9,40,32,.45)}
+.ph-head{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--muted)}
+.ph-head b{font-family:var(--f-display);color:var(--ink);font-size:.95rem}
+.sample{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:.72rem}
+.left{margin-top:12px}
+.left .lbl{font-size:.8rem;color:var(--muted)}
+.left .big{font-family:var(--f-display);font-weight:800;font-size:2.1rem;line-height:1.1}
+.left .big.neg{color:var(--warn)}
+.meter{height:10px;border-radius:99px;background:var(--soft);overflow:hidden;margin-top:8px}
+.meter i{display:block;height:100%;background:var(--brand);border-radius:99px;transition:width .5s}
+.of{font-size:.8rem;color:var(--muted);margin-top:6px}
+.cats{display:grid;gap:7px;margin-top:14px}
+.cat{display:grid;grid-template-columns:96px 1fr auto;gap:8px;align-items:center;font-size:.82rem;padding:2px 4px;border-radius:8px}
+.cat .bar{height:7px;border-radius:99px;background:var(--soft);overflow:hidden}
+.cat .bar i{display:block;height:100%;border-radius:99px;transition:width .5s}
+.cat .v{color:var(--muted);text-align:right}
+.cat.over .v{color:var(--warn);font-weight:700}
+.cat.flash{animation:flash 1.1s}
+@keyframes flash{0%{background:var(--accent)}100%{background:transparent}}
+.entry{display:flex;gap:8px;margin-top:16px}
+.entry input{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.entry .btn{padding:12px 16px}
+.mic{width:46px;padding:0;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);display:grid;place-items:center}
+.mic.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 11px;font-size:.8rem}
+.chip:hover{background:var(--soft)}
+.status{min-height:1.4em;font-size:.82rem;color:var(--muted);margin-top:8px}
+.recent{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.recent h3{font-size:.8rem;color:var(--muted);font-family:var(--f-body);font-weight:500;margin-bottom:6px}
+.tx{display:flex;justify-content:space-between;gap:8px;font-size:.86rem;padding:4px 0}
+.tx span:first-child{display:flex;align-items:center;gap:8px;min-width:0}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.tx-new{animation:slide .4s}
+@keyframes slide{from{opacity:.2;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.reset{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:.8rem;margin-top:8px;padding:0}
+
+/* sections */
+section{padding-block:56px}
+.band{background:var(--surface);margin-inline:-16px;padding-inline:16px;border-block:1px solid var(--line)}
+h2{font-size:clamp(1.7rem,4.4vw,2.6rem);font-weight:800;letter-spacing:-.015em}
+.lede{color:var(--muted);margin-top:12px;max-width:40em}
+.steps{display:grid;gap:16px;margin-top:28px}
+@media(min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{padding-top:14px;border-top:3px solid var(--brand)}
+.step h3{font-size:1.25rem}
+.step p{color:var(--muted);margin-top:6px}
+.two{display:grid;gap:28px;margin-top:28px}
+@media(min-width:860px){.two{grid-template-columns:1fr 1fr;gap:48px;align-items:start}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px}
+.band .panel{background:var(--bg)}
+.row{display:grid;gap:6px;margin-bottom:16px}
+.row label{display:flex;justify-content:space-between;gap:10px;font-weight:500;font-size:.95rem}
+.row output{font-weight:700}
+input[type=range]{width:100%;accent-color:var(--brand);height:28px}
+.result{border-radius:16px;background:var(--brand);color:var(--brand-ink);padding:18px}
+.result .k{font-size:.85rem;opacity:.9}
+.result .n{font-family:var(--f-display);font-weight:800;font-size:2.2rem;line-height:1.1}
+.res-grid{display:grid;gap:14px;margin-top:12px;grid-template-columns:1fr 1fr}
+.res-grid .n{font-size:1.5rem}
+.fine{font-size:.82rem;color:var(--muted);margin-top:12px}
+.stack{position:relative;height:34px;border-radius:10px;background:var(--soft);overflow:hidden;display:flex;margin-top:6px}
+.stack i{display:block;height:100%;transition:width .4s}
+.stack .mk{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--ink);transition:left .4s}
+.legend{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:.85rem;margin-top:10px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.pill{display:inline-block;border-radius:999px;padding:3px 12px;font-weight:700;font-size:.85rem}
+.pill.ok{background:var(--soft);color:var(--ok)}
+.pill.bad{background:var(--accent);color:var(--accent-ink)}
+.bills{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:4px;font-size:.92rem}
+.bills li{display:flex;justify-content:space-between;gap:10px}
+.soon-grid{display:grid;gap:14px;margin-top:26px}
+@media(min-width:700px){.soon-grid{grid-template-columns:repeat(4,1fr)}}
+.soon-item{border:1.5px dashed var(--line);border-radius:16px;padding:16px;background:var(--surface)}
+.soon-item b{font-family:var(--f-display);font-size:1.05rem;display:block;margin-bottom:8px}
+.tag{font-size:.75rem;font-weight:700;background:var(--soft);color:var(--brand);border-radius:99px;padding:2px 10px}
+details{border-bottom:1px solid var(--line);padding-block:14px}
+summary{font-weight:700;cursor:pointer;font-size:1.05rem;list-style-position:outside}
+details p{color:var(--muted);margin-top:8px;max-width:42em}
+.cta{text-align:left}
+.cta h2{max-width:14em}
+.share{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;align-items:center}
+.linkbox{flex:1;min-width:180px;padding:11px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:.9rem}
+footer{padding-block:28px;border-top:1px solid var(--line);font-size:.9rem;color:var(--muted)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
+.sbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:12px;align-items:center;justify-content:space-between}
+.sbar b{font-family:var(--f-display)}
+.sbar .store{min-width:0;padding:8px 14px}
+@media(min-width:721px){.sbar{display:none}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:40;font-size:.9rem}
+
+/* previews */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:26px}
+.tab{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:9px 16px;font-weight:700;font-size:.95rem}
+.tab[aria-selected="true"]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.pv{margin-top:18px}
+.pv-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.pv-head h3{font-size:1.5rem}
+.tag.live{background:var(--brand);color:var(--brand-ink)}
+.tag.soonx{background:var(--accent);color:var(--accent-ink)}
+.pv-note{font-size:.85rem;color:var(--muted);margin-top:12px}
+.field{display:grid;gap:6px;margin-bottom:14px}
+.field>label{font-weight:500;font-size:.95rem}
+.field input[type=text],.field input[type=number]{padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;width:100%}
+.token{font-family:var(--f-display);font-weight:800;font-size:1.35rem;letter-spacing:.08em;word-spacing:.3em;background:var(--soft);border-radius:12px;padding:14px;margin-top:6px;overflow-wrap:anywhere}
+.out{margin-top:14px;padding:16px;border-radius:16px;background:var(--soft)}
+.out .k{font-size:.85rem;color:var(--muted)}
+.out .n{font-family:var(--f-display);font-weight:800;font-size:1.6rem;line-height:1.15}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.kv:last-child{border-bottom:0}
+.ok-msg{color:var(--ok);font-weight:700}
+.bad-msg{color:var(--warn);font-weight:700}
+.scan{position:relative;width:100%;max-width:280px;aspect-ratio:1;margin-inline:auto;border-radius:20px;background:var(--ink);overflow:hidden;display:grid;place-items:center}
+.scan canvas{width:66%;height:66%;image-rendering:pixelated;background:#fff;border-radius:6px;padding:6px}
+.scan .line{position:absolute;left:8%;right:8%;height:3px;background:var(--accent);top:10%;animation:sweep 1.4s linear infinite;display:none}
+.scan.on .line{display:block}
+@keyframes sweep{0%{top:10%}50%{top:88%}100%{top:10%}}
+.corner{position:absolute;width:26px;height:26px;border:3px solid var(--accent)}
+.corner.a{top:12px;left:12px;border-right:0;border-bottom:0;border-top-left-radius:8px}
+.corner.b{top:12px;right:12px;border-left:0;border-bottom:0;border-top-right-radius:8px}
+.corner.c{bottom:12px;left:12px;border-right:0;border-top:0;border-bottom-left-radius:8px}
+.corner.d{bottom:12px;right:12px;border-left:0;border-top:0;border-bottom-right-radius:8px}
+.vcard{position:relative;width:100%;max-width:340px;aspect-ratio:1.586;border-radius:20px;padding:20px;color:#fff;background:linear-gradient(135deg,#0B7A5C 0%,#0E5A6B 100%);display:flex;flex-direction:column;justify-content:space-between;transition:filter .3s,opacity .3s}
+.vcard.frozen{filter:grayscale(1) brightness(.7);opacity:.85}
+.vcard .r1{display:flex;justify-content:space-between;align-items:center;font-family:var(--f-display);font-weight:800}
+.vcard .r1 small{font-family:var(--f-body);font-weight:500;background:rgba(255,255,255,.2);padding:2px 10px;border-radius:99px;letter-spacing:.04em}
+.vcard .num16{font-family:var(--f-display);font-weight:700;font-size:1.25rem;letter-spacing:.1em}
+.vcard .r3{display:flex;justify-content:space-between;font-size:.8rem;opacity:.95}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.sw{position:relative;width:48px;height:28px;border-radius:99px;border:0;background:var(--line);padding:0;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--surface);transition:transform .2s}
+.sw[aria-checked="true"]{background:var(--brand)}
+.sw[aria-checked="true"]::after{transform:translateX(20px)}
+.wl{margin-top:34px;padding:20px;border-radius:20px;border:1.5px dashed var(--line);background:var(--surface)}
+.wl form{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.wl input{flex:1;min-width:200px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.social{margin-top:28px}
+.social b{font-family:var(--f-display);font-size:1.05rem;display:block;margin-bottom:10px}
+.soc-row{display:flex;flex-wrap:wrap;gap:8px}
+.soc-row a{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:700;font-size:.92rem;text-decoration:none;background:var(--surface)}
+.soc-row a:hover{background:var(--soft)}
+footer .soc-row a{padding:5px 12px;font-size:.85rem;background:transparent}
+footer .foot-soc{margin-top:14px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="MitaPesa">
+      <span class="mark" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6D26B"/><stop offset=".55" stop-color="#D9A030"/><stop offset="1" stop-color="#A9721A"/></linearGradient><radialGradient id="cf" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#12805A"/><stop offset="1" stop-color="#07442F"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#cg)"/><circle cx="50" cy="50" r="39" fill="url(#cf)" stroke="#F0C85A" stroke-width="2"/><path d="M15 53H33L37 48L41 55L48 20L57 80L63 42L67 51H85" fill="none" stroke="#F2C24C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      MitaPesa
+    </a>
+    <div class="top-actions">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" id="lang-sw" aria-pressed="true">SW</button>
+        <button type="button" id="lang-en" aria-pressed="false">EN</button>
+      </div>
+      <a class="btn small nav-dl" href="#download" data-t="navDl">Pakua</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+<div class="wrap">
+  <div class="hero">
+    <div>
+      <h1><span data-t="h1a">Jua pesa yako</span> <em data-t="h1b">inaenda wapi.</em></h1>
+      <p class="sub" data-t="sub"></p>
+      <div class="stores" data-stores></div>
+      <p class="note" data-t="heroNote"></p>
+    </div>
+
+    <div class="phone" aria-label="MitaPesa demo">
+      <div class="ph-head"><b data-t="tryIt">Jaribu sasa</b><span class="sample" data-t="sample">Data ya mfano</span></div>
+      <div class="left">
+        <div class="lbl" data-t="leftLbl"></div>
+        <div class="big num" id="leftBig"></div>
+        <div class="meter" aria-hidden="true"><i id="meterFill"></i></div>
+        <div class="of num" id="ofTxt"></div>
+      </div>
+      <div class="cats" id="cats"></div>
+      <form class="entry" id="entry" autocomplete="off">
+        <input id="entryInput" type="text" inputmode="text" aria-label="Spend" data-tp="ph">
+        <button class="mic" type="button" id="mic" aria-label="Speak" data-tl="mic" aria-pressed="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+        <button class="btn" type="submit" data-t="add">Weka</button>
+      </form>
+      <div class="chips" id="chips"></div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+      <div class="recent"><h3 data-t="recent"></h3><div id="txs"></div></div>
+      <button class="reset" type="button" id="reset" data-t="reset"></button>
+    </div>
+  </div>
+</div>
+
+<section class="band">
+  <div class="wrap">
+    <h2 data-t="howH"></h2>
+    <div class="steps">
+      <div class="step"><h3 data-t="s1h"></h3><p data-t="s1p"></p></div>
+      <div class="step"><h3 data-t="s2h"></h3><p data-t="s2p"></p></div>
+      <div class="step"><h3 data-t="s3h"></h3><p data-t="s3p"></p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2 data-t="calcH"></h2>
+    <p class="lede" data-t="calcP"></p>
+    <div class="two">
+      <div class="panel">
+        <div class="row"><label for="c-snack"><span data-t="cSnack"></span><output id="o-snack" class="num"></output></label><input type="range" id="c-snack" min="0" max="10000" step="500" value="2500"></div>
+        <div class="row"><label for="c-trans"><span data-t="cTrans"></span><output id="o-trans" class="num"></output></label><input type="range" id="c-trans" min="0" max="15000" step="500" value="3000"></div>
+        <div class="row"><label for="c-data"><span data-t="cData"></span><output id="o-data" class="num"></output></label><input type="range" id="c-data" min="0" max="30000" step="1000" value="7000"></div>
+        <div class="row"><label for="c-eat"><span data-t="cEat"></span><output id="o-eat" class="num"></output></label><input type="range" id="c-eat" min="0" max="60000" step="1000" value="15000"></div>
+        <div class="row"><label for="c-trim"><span data-t="cTrim"></span><output id="o-trim" class="num"></output></label><input type="range" id="c-trim" min="5" max="30" step="5" value="15"></div>
+      </div>
+      <div>
+        <div class="result">
+          <div class="k" data-t="rSpend"></div><div class="n num" id="r-month"></div>
+          <div class="res-grid">
+            <div><div class="k" data-t="rFree"></div><div class="n num" id="r-free"></div></div>
+            <div><div class="k" data-t="rYear"></div><div class="n num" id="r-year"></div></div>
+          </div>
+          <div class="k" style="margin-top:14px" data-t="rGoal"></div><div class="n num" id="r-goal"></div>
+        </div>
+        <p class="fine" data-t="fineCalc"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2 data-t="hhH"></h2>
+    <p class="lede" data-t="hhP"></p>
+    <div class="two">
+      <div class="panel">
+        <div class="row"><label for="h-baba"><span>Baba</span><output id="o-baba" class="num"></output></label><input type="range" id="h-baba" min="0" max="400000" step="10000" value="250000"></div>
+        <div class="row"><label for="h-mama"><span>Mama</span><output id="o-mama" class="num"></output></label><input type="range" id="h-mama" min="0" max="400000" step="10000" value="180000"></div>
+        <div class="row"><label for="h-juma"><span>Juma</span><output id="o-juma" class="num"></output></label><input type="range" id="h-juma" min="0" max="400000" step="10000" value="60000"></div>
+      </div>
+      <div>
+        <div><span class="lbl" data-t="hhPot"></span> <b class="num" id="hh-pot"></b></div>
+        <div class="stack" id="hh-stack" aria-hidden="true"><i style="background:var(--c-food)"></i><i style="background:var(--c-transport)"></i><i style="background:var(--c-utilities)"></i><span class="mk" id="hh-mk"></span></div>
+        <div class="legend"><span><i class="dot" style="background:var(--c-food)"></i>Baba</span><span><i class="dot" style="background:var(--c-transport)"></i>Mama</span><span><i class="dot" style="background:var(--c-utilities)"></i>Juma</span><span data-t="hhMark"></span></div>
+        <p style="margin-top:14px" id="hh-status" role="status" aria-live="polite"></p>
+        <ul class="bills">
+          <li><span data-t="bRent"></span><span class="num">TSh 200,000</span></li>
+          <li><span data-t="bPower"></span><span class="num">TSh 40,000</span></li>
+          <li><span data-t="bSchool"></span><span class="num">TSh 100,000</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="preview">
+  <div class="wrap">
+    <h2 data-t="soonH"></h2>
+    <p class="lede" data-t="soonP"></p>
+    <div class="tabs" role="tablist" aria-label="Preview">
+      <button class="tab" role="tab" id="tab-luku" aria-controls="pv-luku" aria-selected="true" data-tab="luku" data-t="tLuku"></button>
+      <button class="tab" role="tab" id="tab-gepg" aria-controls="pv-gepg" aria-selected="false" tabindex="-1" data-tab="gepg" data-t="tGepg"></button>
+      <button class="tab" role="tab" id="tab-qr" aria-controls="pv-qr" aria-selected="false" tabindex="-1" data-tab="qr" data-t="tQr"></button>
+      <button class="tab" role="tab" id="tab-card" aria-controls="pv-card" aria-selected="false" tabindex="-1" data-tab="card" data-t="tCard"></button>
+    </div>
+
+    <div class="pv" id="pv-luku" role="tabpanel" aria-labelledby="tab-luku">
+      <div class="pv-head"><h3 data-t="lukuH"></h3><span class="tag" data-status="luku"></span></div>
+      <div class="two" style="margin-top:0">
+        <div class="panel">
+          <div class="field"><label for="l-meter" data-t="lukuMeter"></label><input id="l-meter" type="text" inputmode="numeric" value="0123 4567 890" maxlength="14"></div>
+          <div class="row"><label for="l-amt"><span data-t="lukuAmt"></span><output id="o-lamt" class="num"></output></label><input type="range" id="l-amt" min="5000" max="100000" step="5000" value="20000"></div>
+          <div class="row"><label for="l-rate"><span data-t="lukuRate"></span><output id="o-lrate" class="num"></output></label><input type="range" id="l-rate" min="100" max="500" step="10" value="300"></div>
+        </div>
+        <div>
+          <div class="out"><div class="k" data-t="lukuUnits"></div><div class="n num" id="l-units"></div><div class="k" style="margin-top:8px" id="l-budget"></div></div>
+          <button class="btn" type="button" id="l-go" style="margin-top:14px" data-t="lukuBtn"></button>
+          <div id="l-tokenbox" hidden><div class="k" style="margin-top:14px;font-size:.85rem;color:var(--muted)" data-t="lukuToken"></div><div class="token num" id="l-token"></div></div>
+          <p class="pv-note" data-t="lukuNote"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-gepg" role="tabpanel" aria-labelledby="tab-gepg" hidden>
+      <div class="pv-head"><h3 data-t="gepgH"></h3><span class="tag" data-status="gepg"></span></div>
+      <div class="two" style="margin-top:0">
+        <div class="panel">
+          <div class="field"><label for="g-cn" data-t="gepgLabel"></label><input id="g-cn" type="text" inputmode="numeric" maxlength="12" placeholder="991234567801"></div>
+          <div class="chips" id="g-chips"></div>
+          <button class="btn" type="button" id="g-find" style="margin-top:14px" data-t="gepgFind"></button>
+          <p class="status" id="g-msg" role="status" aria-live="polite"></p>
+        </div>
+        <div>
+          <div class="out" id="g-bill" hidden>
+            <div class="kv"><span data-t="gBill"></span><b id="g-name"></b></div>
+            <div class="kv"><span data-t="gPayer"></span><b id="g-payer"></b></div>
+            <div class="kv"><span data-t="gDue"></span><b id="g-due" class="num"></b></div>
+            <div class="kv"><span data-t="gAmt"></span><b id="g-amt" class="num"></b></div>
+            <button class="btn" type="button" id="g-pay" style="margin-top:12px;width:100%" data-t="gepgPay"></button>
+            <p id="g-done" class="ok-msg" style="margin-top:10px" hidden></p>
+          </div>
+          <p class="pv-note" data-t="gepgNote"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-qr" role="tabpanel" aria-labelledby="tab-qr" hidden>
+      <div class="pv-head"><h3 data-t="qrH"></h3><span class="tag" data-status="qr"></span></div>
+      <div class="two" style="margin-top:0">
+        <div>
+          <div class="scan" id="scan"><canvas id="qrc" width="29" height="29" aria-label="Sample QR"></canvas><i class="line"></i><i class="corner a"></i><i class="corner b"></i><i class="corner c"></i><i class="corner d"></i></div>
+          <button class="btn" type="button" id="q-scan" style="margin-top:14px;width:100%;max-width:280px;display:flex;margin-inline:auto" data-t="qrScan"></button>
+        </div>
+        <div>
+          <div class="out" id="q-sheet" hidden>
+            <div class="kv"><span data-t="qMerchant"></span><b>Mama Lishe, Kariakoo</b></div>
+            <div class="field" style="margin-top:12px"><label for="q-amt" data-t="qAmt"></label><input id="q-amt" type="number" min="500" step="500" value="8000" inputmode="numeric"></div>
+            <div class="kv"><span data-t="qCat"></span><b data-t="qCatV"></b></div>
+            <div class="kv"><span data-t="qLeft"></span><b class="num" id="q-left"></b></div>
+            <button class="btn" type="button" id="q-pay" style="margin-top:12px;width:100%" data-t="qPay"></button>
+            <p id="q-done" class="ok-msg" style="margin-top:10px" hidden></p>
+          </div>
+          <p class="pv-note" data-t="qrNote"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-card" role="tabpanel" aria-labelledby="tab-card" hidden>
+      <div class="pv-head"><h3 data-t="cardH"></h3><span class="tag" data-status="card"></span></div>
+      <div class="two" style="margin-top:0">
+        <div>
+          <div class="vcard" id="vcard"><div class="r1"><span>MitaPesa</span><small id="vc-state"></small></div><div class="num16">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4821</div><div class="r3"><span>JUMA M.</span><span class="num">09/29</span><span data-t="vcVirtual"></span></div></div>
+        </div>
+        <div class="panel">
+          <div class="toggle"><span data-t="cFreeze"></span><button class="sw" type="button" role="switch" id="c-freeze" aria-checked="false" data-tl="cFreeze"></button></div>
+          <div class="toggle"><span data-t="cOnline"></span><button class="sw" type="button" role="switch" id="c-online" aria-checked="true" data-tl="cOnline"></button></div>
+          <div class="row" style="margin-top:14px"><label for="c-limit"><span data-t="cLimit"></span><output id="o-climit" class="num"></output></label><input type="range" id="c-limit" min="100000" max="2000000" step="50000" value="500000"></div>
+          <button class="btn alt" type="button" id="c-test" data-t="cTest"></button>
+          <p id="c-res" class="status" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+      <p class="pv-note" data-t="cardNote"></p>
+    </div>
+
+    <div class="wl" id="wl" hidden>
+      <b data-t="wlH"></b>
+      <form id="wl-form"><input id="wl-contact" type="text" aria-label="Contact" data-tp="wlPh" required><button class="btn" type="submit" data-t="wlBtn"></button></form>
+      <p class="pv-note" id="wl-msg" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap" style="max-width:760px">
+    <h2 data-t="faqH"></h2>
+    <div style="margin-top:20px">
+      <details><summary data-t="q1"></summary><p data-t="a1"></p></details>
+      <details><summary data-t="q2"></summary><p data-t="a2"></p></details>
+      <details><summary data-t="q3"></summary><p data-t="a3"></p></details>
+      <details><summary data-t="q4"></summary><p data-t="a4"></p></details>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap cta">
+    <h2 data-t="ctaH"></h2>
+    <div class="stores" data-stores></div>
+    <div class="share">
+      <a class="btn alt" id="wa" href="#" target="_blank" rel="noopener" data-t="shareWa"></a>
+      <input class="linkbox" id="linkbox" type="text" readonly aria-label="Link">
+      <button class="btn alt" type="button" id="copy" data-t="copy"></button>
+    </div>
+    <div class="social" id="social" hidden><b data-t="followH"></b><div class="soc-row" id="soc-cta"></div></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>&copy; Duga Pay</span>
+    <span><a id="lt" href="#" target="_blank" rel="noopener" data-t="terms"></a> &middot; <a id="lp" href="#" target="_blank" rel="noopener" data-t="privacy"></a></span>
+  </div>
+  <div class="wrap foot-soc" id="foot-soc" hidden><div class="soc-row" id="soc-foot"></div></div>
+</footer>
+
+<div class="sbar" id="stickybar"><b data-t="barTxt"></b><span data-stores-one></span></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ---------- CONFIG: edit these before deploying ---------- */
+var CONFIG = {
+  siteUrl: "https://mitapesa.dugapay.com",
+  landingUrl: "https://mitapesa.dugapay.com/welcome.html",  // the address people share
+  appStoreUrl: "",   // paste the App Store link when live
+  playUrl: "",       // paste the Google Play link when live
+  waitlistUrl: "",   // POST endpoint on your backend (JSON: contact, lang). Empty hides the form.
+  social: { tiktok:"", instagram:"https://www.instagram.com/mitapesa.app/", whatsapp:"", facebook:"", youtube:"", x:"" },  // paste full profile links; empty ones are hidden
+  features: { luku:"soon", gepg:"soon", qr:"soon", card:"soon" }  // change to "live" as each ships
+};
+
+/* ---------- copy ---------- */
+var T = {
+sw:{navDl:"Pakua",h1a:"Jua pesa yako",h1b:"inaenda wapi.",
+ sub:"MitaPesa inaandika matumizi yako, inapanga bajeti na inasaidia familia nzima kudhibiti pesa. Sema au andika, imeandikwa.",
+ heroNote:"Bure kuanza. Kiswahili na English.",tryIt:"Jaribu sasa",sample:"Data ya mfano",
+ leftLbl:"Kilichobaki mwezi huu",of:"kati ya bajeti ya",ph:"mfano: chai 2000",add:"Weka",mic:"Sema",
+ recent:"Za hivi karibuni",reset:"Anza upya",
+ hint:"Andika ulichotumia, mfano “chai 2000” au “boda 3k”.",
+ needAmt:"Weka kiasi pia, mfano “chai 2000”.",added:"Imewekwa",to:"kwenye",over:"Umevuka bajeti ya",listening:"Inasikiliza (mfano)…",
+ howH:"Hatua tatu. Bila spreadsheet.",
+ s1h:"Andika",s1p:"Sema au andika matumizi. Inachukua sekunde tano.",
+ s2h:"Inapangwa",s2p:"MitaPesa inachagua kundi na kusasisha bajeti yako.",
+ s3h:"Ona mwezi",s3p:"Jua kilichobaki kabla ya mshahara, si baada.",
+ calcH:"Matumizi madogo yanakwenda wapi",calcP:"Rekebisha vitelezi kulingana na wiki yako. Ni mfano wa kukokotoa, si ahadi.",
+ cSnack:"Chai na vitafunio, kwa siku",cTrans:"Nauli, kwa siku",cData:"Vocha na bundle, kwa wiki",cEat:"Kula nje, kwa wiki",cTrim:"Ukipunguza kwa",
+ rSpend:"Unatumia takriban, kwa mwezi",rFree:"Unaweza kubaki na, kwa mwezi",rYear:"Kwa mwaka",rGoal:"Muda wa kuweka TSh 1,000,000",months:"miezi",
+ fineCalc:"Mfano wa kukokotoa tu. Matokeo halisi hutegemea tabia zako.",
+ hhH:"Pochi moja ya familia nzima",hhP:"Ona nani anachangia nini na kama bili za pamoja za mwezi zimefunikwa. Sogeza vitelezi.",
+ hhPot:"Kwenye pochi:",hhMark:"Mstari mweusi = bili zote",bRent:"Kodi",bPower:"Umeme",bSchool:"Ada ya shule",
+ covered:"Bili zote zimefunikwa. Ziada:",short:"Bili hazijafunikwa. Pungufu:",
+ followH:"Tufuate",soonH:"Angalia kinachokuja",soonP:"Hivi ni vielelezo shirikishi vya vipengele vinavyokuja. Data zote ni za mfano na hakuna pesa halisi inayohamishwa.",
+ tLuku:"LUKU",tGepg:"Bili (GePG)",tQr:"Lipa kwa QR",tCard:"Kadi",stSoon:"Inakuja",stLive:"Inapatikana",
+ lukuH:"Nunua tokeni ya LUKU",lukuMeter:"Namba ya mita (mfano)",lukuAmt:"Kiasi cha kununua",lukuRate:"Bei ya mfano kwa unit",
+ lukuUnits:"Unit unazopata (makadirio)",lukuBtn:"Toa tokeni ya mfano",lukuToken:"Tokeni ya mfano, si halisi",
+ lukuBudget:"Bajeti ya Umeme na mtandao itabaki:",lukuNote:"Bei halisi na makato hutegemea mtoa huduma wa umeme. Hii ni hesabu ya mfano.",
+ gepgH:"Lipa bili za serikali",gepgLabel:"Namba ya kumbukumbu (control number, tarakimu 12)",gepgFind:"Tafuta bili",
+ gBill:"Bili",gPayer:"Mlipaji",gDue:"Mwisho wa kulipa",gAmt:"Kiasi",gepgPay:"Lipa (mfano)",
+ gNone:"Namba hii haipo kwenye mifano. Jaribu moja ya mifano hapo juu.",gShort:"Weka tarakimu 12.",gPaid:"Imelipwa (mfano). Risiti ya mfano:",
+ gepgNote:"Majina na kiasi ni vya mfano. Hakuna malipo halisi yanayofanyika.",
+ qrH:"Lipa kwa kuchanganua QR",qrScan:"Changanua QR ya mfano",qMerchant:"Mfanyabiashara",qAmt:"Kiasi (TSh)",qCat:"Kundi",qCatV:"Chakula (kiotomatiki)",
+ qLeft:"Bajeti ya Chakula itabaki",qPay:"Lipa (mfano)",qDone:"Imelipwa (mfano) na kuwekwa kwenye bajeti yako.",qrNote:"Imelenga kiwango cha TANQR. QR unayoiona ni ya mfano tu.",
+ cardH:"Kadi ya mtandaoni",vcVirtual:"Ya mtandaoni",cFreeze:"Zima kadi kwa muda",cOnline:"Ruhusu manunuzi ya mtandaoni",cLimit:"Kikomo cha mwezi",
+ cTest:"Jaribu manunuzi ya TSh 25,000 mtandaoni",cActive:"Inatumika",cFrozen:"Imezimwa",
+ cOk:"Imekubaliwa (mfano).",cNoFrozen:"Imekataliwa: kadi imezimwa.",cNoOnline:"Imekataliwa: manunuzi ya mtandaoni yamezimwa.",cNoLimit:"Imekataliwa: kikomo cha mwezi ni kidogo.",
+ cardNote:"Kadi ni ya mfano. Kadi halisi itaanza baada ya mshirika wa benki kuthibitishwa.",
+ wlH:"Nijulishe vikiwa tayari",wlPh:"Namba ya simu au email",wlBtn:"Nijulishe",wlOk:"Asante. Tutakujulisha.",wlErr:"Haikutumwa. Jaribu tena.",
+ faqH:"Maswali ya kawaida",
+ q1:"Je, ni bure?",a1:"Ndiyo. Kuandika matumizi, kupanga bajeti na kuona ripoti ni bure.",
+ q2:"Je, MitaPesa inahamisha pesa yangu?",a2:"Bado hapana. Kwa sasa MitaPesa inakusaidia kufuatilia na kupanga. Malipo yataongezwa yakiwa tayari.",
+ q3:"Data yangu iko salama?",a3:"Tunatumia ukaguzi wa upande wa seva, na unakubali masharti na faragha kabla ya kuanza. Soma Faragha chini ya ukurasa.",
+ q4:"Inafanya kazi kwenye simu gani?",a4:"iPhone na Android. Angalia vitufe vya kupakua kwa upatikanaji wa sasa.",
+ ctaH:"Anza mwezi wako na mpango.",shareWa:"Tuma kwa rafiki kwenye WhatsApp",copy:"Nakili link",copied:"Imenakiliwa",
+ terms:"Masharti",privacy:"Faragha",barTxt:"Pakua bure",
+ shareText:"Nimeanza kutumia MitaPesa kupanga bajeti yangu. Jaribu bure:",
+ dl:"Pakua kwenye",soonWord:"Inakuja",getOn:"Pakua",
+ cat:{food:"Chakula",transport:"Usafiri",utilities:"Umeme na mtandao",rent:"Kodi",family:"Familia",health:"Afya",shopping:"Manunuzi",other:"Mengineyo"}},
+en:{navDl:"Download",h1a:"Know where your money",h1b:"goes.",
+ sub:"MitaPesa tracks your spending, plans your budget and helps the whole family stay on top of money. Say it or type it, and it is logged.",
+ heroNote:"Free to start. Swahili and English.",tryIt:"Try it now",sample:"Sample data",
+ leftLbl:"Left this month",of:"of a budget of",ph:"e.g. lunch 4500",add:"Add",mic:"Speak",
+ recent:"Recent",reset:"Start over",
+ hint:"Type what you spent, like “chai 2000” or “boda 3k”.",
+ needAmt:"Add an amount too, like “chai 2000”.",added:"Added",to:"to",over:"You are over budget on",listening:"Listening (demo)…",
+ howH:"Three steps. No spreadsheets.",
+ s1h:"Log it",s1p:"Say or type a spend. It takes five seconds.",
+ s2h:"Sorted for you",s2p:"MitaPesa picks the category and updates your budget.",
+ s3h:"See the month",s3p:"Know what is left before payday, not after.",
+ calcH:"Where the small spends go",calcP:"Move the sliders to match your week. This is an illustration, not a promise.",
+ cSnack:"Tea and snacks, per day",cTrans:"Transport, per day",cData:"Airtime and data, per week",cEat:"Eating out, per week",cTrim:"If you trim by",
+ rSpend:"You spend about, per month",rFree:"You could free up, per month",rYear:"Per year",rGoal:"Time to save TSh 1,000,000",months:"months",
+ fineCalc:"Illustration only. Real results depend on your habits.",
+ hhH:"One wallet for the whole family",hhP:"See who contributes what and whether the month's shared bills are covered. Move the sliders.",
+ hhPot:"In the wallet:",hhMark:"Black line = all bills",bRent:"Rent",bPower:"Electricity",bSchool:"School fees",
+ covered:"All bills covered. Extra:",short:"Bills not covered. Short by:",
+ followH:"Follow us",soonH:"Preview what is coming",soonP:"These are interactive previews of features on the way. All data is sample data and no real money moves.",
+ tLuku:"LUKU",tGepg:"Bills (GePG)",tQr:"Pay by QR",tCard:"Card",stSoon:"Coming soon",stLive:"Live",
+ lukuH:"Buy a LUKU token",lukuMeter:"Meter number (sample)",lukuAmt:"Amount to buy",lukuRate:"Example price per unit",
+ lukuUnits:"Units you would get (estimate)",lukuBtn:"Show sample token",lukuToken:"Sample token, not real",
+ lukuBudget:"Your Power and internet budget would have left:",lukuNote:"Real prices and charges are set by the utility. This is an example calculation.",
+ gepgH:"Pay government bills",gepgLabel:"Control number (12 digits)",gepgFind:"Find bill",
+ gBill:"Bill",gPayer:"Payer",gDue:"Due date",gAmt:"Amount",gepgPay:"Pay (sample)",
+ gNone:"That number is not one of the samples. Try one of the samples above.",gShort:"Enter 12 digits.",gPaid:"Paid (sample). Sample receipt:",
+ gepgNote:"Names and amounts are samples. No real payment happens.",
+ qrH:"Pay by scanning a QR",qrScan:"Scan sample QR",qMerchant:"Merchant",qAmt:"Amount (TSh)",qCat:"Category",qCatV:"Food (automatic)",
+ qLeft:"Food budget would have left",qPay:"Pay (sample)",qDone:"Paid (sample) and added to your budget.",qrNote:"Designed around the TANQR standard. The QR you see is a sample only.",
+ cardH:"Virtual card",vcVirtual:"Virtual",cFreeze:"Freeze card",cOnline:"Allow online purchases",cLimit:"Monthly limit",
+ cTest:"Try a TSh 25,000 online purchase",cActive:"Active",cFrozen:"Frozen",
+ cOk:"Approved (sample).",cNoFrozen:"Declined: card is frozen.",cNoOnline:"Declined: online purchases are off.",cNoLimit:"Declined: monthly limit is too low.",
+ cardNote:"This card is a sample. A real card starts once a bank partner is confirmed.",
+ wlH:"Tell me when these are ready",wlPh:"Phone number or email",wlBtn:"Notify me",wlOk:"Thank you. We will let you know.",wlErr:"Not sent. Please try again.",
+ faqH:"Common questions",
+ q1:"Is it free?",a1:"Yes. Logging spending, planning budgets and seeing reports are free.",
+ q2:"Does MitaPesa move my money?",a2:"Not yet. Right now MitaPesa helps you track and plan. Payments will be added when they are ready.",
+ q3:"Is my data safe?",a3:"Checks run on the server side, and you accept the terms and privacy notice before you start. Read the Privacy page at the bottom.",
+ q4:"Which phones does it work on?",a4:"iPhone and Android. See the download buttons for what is available today.",
+ ctaH:"Start your month with a plan.",shareWa:"Send to a friend on WhatsApp",copy:"Copy link",copied:"Copied",
+ terms:"Terms",privacy:"Privacy",barTxt:"Download free",
+ shareText:"I started using MitaPesa to plan my budget. Try it free:",
+ dl:"Download on the",soonWord:"Coming soon",getOn:"Get it on",
+ cat:{food:"Food",transport:"Transport",utilities:"Power and internet",rent:"Rent",family:"Family",health:"Health",shopping:"Shopping",other:"Other"}}
+};
+var lang = "sw";
+try{ var sl = localStorage.getItem("mp_lang"); if(sl==="en"||sl==="sw") lang = sl; }catch(e){}
+function t(k){ return (T[lang][k]!==undefined?T[lang][k]:T.en[k]); }
+var nf = new Intl.NumberFormat("en-US");
+function tsh(n){ return "TSh "+nf.format(Math.round(n)); }
+function $(id){ return document.getElementById(id); }
+
+/* ---------- tracking hook (connect to GA4/Meta pixel/PostHog) ---------- */
+var UTM = {};
+try{ new URLSearchParams(location.search).forEach(function(v,k){ if(k.indexOf("utm_")===0) UTM[k]=v; }); }catch(e){}
+function track(name, p){
+  try{ window.dataLayer = window.dataLayer||[]; window.dataLayer.push(Object.assign({event:name},UTM,p||{})); }catch(e){}
+}
+
+/* ---------- store buttons ---------- */
+function platform(){
+  var u = navigator.userAgent||"";
+  if(/android/i.test(u)) return "android";
+  if(/iphone|ipad|ipod/i.test(u)) return "ios";
+  return "other";
+}
+function storeEl(kind){
+  var url = kind==="ios"?CONFIG.appStoreUrl:CONFIG.playUrl;
+  var name = kind==="ios"?"App Store":"Google Play";
+  var top = url ? (kind==="ios"?t("dl"):t("getOn")) : t("soonWord");
+  var el = document.createElement(url?"a":"div");
+  el.className = "store"+(url?"":" soon");
+  if(url){ el.href=url; el.target="_blank"; el.rel="noopener"; el.addEventListener("click",function(){ track("store_click",{store:kind}); }); }
+  else { el.setAttribute("aria-disabled","true"); }
+  el.innerHTML = "<small></small><b></b>";
+  el.firstChild.textContent = top; el.lastChild.textContent = name;
+  return el;
+}
+function renderStores(){
+  var order = platform()==="android" ? ["android","ios"] : ["ios","android"];
+  document.querySelectorAll("[data-stores]").forEach(function(box){
+    box.textContent=""; order.forEach(function(k){ box.appendChild(storeEl(k)); });
+  });
+  var one = document.querySelector("[data-stores-one]");
+  if(one){ one.textContent=""; var first=order[0]; if(!(first==="ios"?CONFIG.appStoreUrl:CONFIG.playUrl)) { first = order[1]; }
+    one.appendChild(storeEl(first)); }
+}
+
+/* ---------- demo budget ---------- */
+var BASE = [
+ {k:"food",limit:200000,spent:142500},{k:"transport",limit:100000,spent:61000},
+ {k:"utilities",limit:90000,spent:48000},{k:"rent",limit:200000,spent:200000},
+ {k:"family",limit:80000,spent:35000},{k:"health",limit:40000,spent:12000},
+ {k:"shopping",limit:60000,spent:22000},{k:"other",limit:80000,spent:18500}
+];
+var cats, txs;
+function resetDemo(){
+  cats = BASE.map(function(c){ return {k:c.k,limit:c.limit,spent:c.spent}; });
+  txs = [{l:"Daladala",k:"transport",a:1500},{l:"Mchele",k:"food",a:6500},{l:"Vocha",k:"utilities",a:2000}];
+}
+resetDemo();
+var KW = {
+ food:["chakula","chai","nyama","mchele","wali","chips","sokoni","lunch","dinner","breakfast","food","mandazi","maziwa","mkate","samaki","supu","juice","soda"],
+ transport:["daladala","boda","bodaboda","nauli","taxi","uber","bolt","mafuta","fuel","petrol","bajaj","basi","bus","transport"],
+ utilities:["luku","umeme","maji","wifi","internet","bundle","airtime","vocha","data","dstv","power","electricity"],
+ rent:["kodi","rent","pango"],
+ family:["ada","shule","school","harusi","zawadi","mchango","watoto","mama","baba","gift","wedding","fees"],
+ health:["dawa","hospitali","zahanati","pharmacy","doctor","daktari","medicine","clinic"],
+ shopping:["nguo","viatu","duka","shopping","simu","phone","mtumba","clothes","shoes"]
+};
+var NUM = {moja:1,mbili:2,tatu:3,nne:4,tano:5,sita:6,saba:7,nane:8,tisa:9,kumi:10};
+function parseAmount(s){
+  var m = s.match(/elfu\s+(moja|mbili|tatu|nne|tano|sita|saba|nane|tisa|kumi)/);
+  if(m) return {n:NUM[m[1]]*1000,raw:m[0]};
+  m = s.match(/elfu\s*(\d+)/);
+  if(m) return {n:parseInt(m[1],10)*1000,raw:m[0]};
+  m = s.match(/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(k|k\b)?/);
+  if(!m) return null;
+  var n = parseFloat(m[1].replace(/,/g,""));
+  if(m[2]) n*=1000;
+  return {n:n,raw:m[0]};
+}
+function detectCat(s){
+  var words = s.split(/[^a-z]+/);
+  for(var k in KW){ for(var i=0;i<KW[k].length;i++){ if(words.indexOf(KW[k][i])>-1) return k; } }
+  return "other";
+}
+function renderDemo(flashKey){
+  var totalL=0,totalS=0;
+  cats.forEach(function(c){ totalL+=c.limit; totalS+=c.spent; });
+  var left = totalL-totalS;
+  var big=$("leftBig"); big.textContent = (left<0?"-":"")+tsh(Math.abs(left)); big.className="big num"+(left<0?" neg":"");
+  $("meterFill").style.width = Math.min(100,totalS/totalL*100)+"%";
+  $("ofTxt").textContent = t("of")+" "+tsh(totalL);
+  var box=$("cats"); box.textContent="";
+  cats.forEach(function(c){
+    var pct = Math.min(100,c.spent/c.limit*100), over=c.spent>c.limit;
+    var d=document.createElement("div"); d.className="cat"+(over?" over":"")+(flashKey===c.k?" flash":"");
+    d.innerHTML='<span></span><div class="bar"><i></i></div><span class="v num"></span>';
+    d.children[0].textContent=t("cat")[c.k];
+    var i=d.querySelector("i"); i.style.width=pct+"%"; i.style.background=over?"var(--warn)":"var(--c-"+c.k+")";
+    d.children[2].textContent=nf.format(Math.round(c.spent/1000))+"k / "+nf.format(c.limit/1000)+"k";
+    box.appendChild(d);
+  });
+  var tb=$("txs"); tb.textContent="";
+  txs.slice(0,4).forEach(function(x,idx){
+    var r=document.createElement("div"); r.className="tx"+(idx===0&&flashKey?" tx-new":"");
+    r.innerHTML='<span><i class="dot"></i><span></span></span><span class="num"></span>';
+    r.querySelector(".dot").style.background="var(--c-"+x.k+")";
+    r.querySelector("span span").textContent=x.l+" · "+t("cat")[x.k];
+    r.lastChild.textContent="-"+tsh(x.a);
+    tb.appendChild(r);
+  });
+}
+function addEntry(raw){
+  var s = raw.toLowerCase().trim();
+  var a = parseAmount(s);
+  if(!a || !(a.n>0)){ $("status").textContent=t("needAmt"); return; }
+  var k = detectCat(s.replace(a.raw,""));
+  var label = raw.trim().replace(new RegExp(a.raw.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i"),"").replace(/\s+/g," ").trim();
+  label = label ? label.charAt(0).toUpperCase()+label.slice(1) : t("cat")[k];
+  var c = cats.filter(function(x){return x.k===k;})[0];
+  c.spent += a.n;
+  txs.unshift({l:label,k:k,a:a.n});
+  var msg = t("added")+" "+tsh(a.n)+" "+t("to")+" "+t("cat")[k]+".";
+  if(c.spent>c.limit) msg += " "+t("over")+" "+t("cat")[k]+".";
+  $("status").textContent = msg;
+  renderDemo(k);
+  track("demo_add",{category:k});
+}
+$("entry").addEventListener("submit",function(e){ e.preventDefault(); var v=$("entryInput").value; if(!v.trim()) return; addEntry(v); $("entryInput").value=""; });
+var CHIPS=["chai 2,000","boda 3k","LUKU 10,000","dawa 8,500","harusi mchango 20k"];
+CHIPS.forEach(function(c){ var b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=c; b.addEventListener("click",function(){ addEntry(c); }); $("chips").appendChild(b); });
+$("reset").addEventListener("click",function(){ resetDemo(); $("status").textContent=t("hint"); renderDemo(); });
+var SAMPLES={sw:["chai na mandazi elfu mbili","nauli ya daladala elfu moja","dawa 8500"],en:["lunch 4500","boda 3k","school fees 50000"]};
+var si=0, typing=null;
+$("mic").addEventListener("click",function(){
+  if(typing) return;
+  var phrase = SAMPLES[lang][si++ % SAMPLES[lang].length];
+  var mic=$("mic"); mic.classList.add("on"); mic.setAttribute("aria-pressed","true");
+  $("status").textContent=t("listening");
+  var input=$("entryInput"); input.value="";
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var i=0;
+  function done(){ clearInterval(typing); typing=null; mic.classList.remove("on"); mic.setAttribute("aria-pressed","false"); addEntry(phrase); input.value=""; }
+  if(reduce){ input.value=phrase; done(); return; }
+  typing=setInterval(function(){ i++; input.value=phrase.slice(0,i); if(i>=phrase.length) setTimeout(done,350), clearInterval(typing); },45);
+  track("demo_voice");
+});
+
+/* ---------- leak calculator ---------- */
+function calc(){
+  var sn=+$("c-snack").value, tr=+$("c-trans").value, da=+$("c-data").value, ea=+$("c-eat").value, tm=+$("c-trim").value;
+  $("o-snack").textContent=tsh(sn); $("o-trans").textContent=tsh(tr); $("o-data").textContent=tsh(da); $("o-eat").textContent=tsh(ea); $("o-trim").textContent=tm+"%";
+  var month = sn*30+tr*30+da*4.3+ea*4.3, free = month*tm/100;
+  $("r-month").textContent=tsh(month); $("r-free").textContent=tsh(free); $("r-year").textContent=tsh(free*12);
+  $("r-goal").textContent = free>0 ? Math.ceil(1000000/free)+" "+t("months") : "-";
+}
+["c-snack","c-trans","c-data","c-eat","c-trim"].forEach(function(id){ $(id).addEventListener("input",calc); $(id).addEventListener("change",function(){ track("calc_used"); }); });
+
+/* ---------- household ---------- */
+var BILLS = 340000;
+function household(){
+  var v=[+$("h-baba").value,+$("h-mama").value,+$("h-juma").value];
+  $("o-baba").textContent=tsh(v[0]); $("o-mama").textContent=tsh(v[1]); $("o-juma").textContent=tsh(v[2]);
+  var pot=v[0]+v[1]+v[2], scale=Math.max(pot,BILLS,1);
+  $("hh-pot").textContent=tsh(pot);
+  var segs=$("hh-stack").querySelectorAll("i");
+  v.forEach(function(x,i){ segs[i].style.width=(x/scale*100)+"%"; });
+  $("hh-mk").style.left="calc("+(BILLS/scale*100)+"% - 1px)";
+  var st=$("hh-status"), diff=pot-BILLS;
+  st.innerHTML='<span class="pill '+(diff>=0?"ok":"bad")+'"></span> <b class="num"></b>';
+  st.querySelector(".pill").textContent = diff>=0 ? t("covered").replace(/[:]$/,"") : t("short").replace(/[:]$/,"");
+  st.querySelector("b").textContent = tsh(Math.abs(diff));
+}
+["h-baba","h-mama","h-juma"].forEach(function(id){ $(id).addEventListener("input",household); $(id).addEventListener("change",function(){ track("household_used"); }); });
+
+/* ---------- share ---------- */
+function shareUrl(src, medium){
+  var q = "?utm_source="+src+"&utm_medium="+medium+"&utm_campaign=friend_share";
+  return CONFIG.landingUrl+q;
+}
+function toast(msg){ var el=$("toast"); el.textContent=msg; el.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(function(){ el.hidden=true; },1800); }
+$("copy").addEventListener("click",function(){
+  var box=$("linkbox"); box.value=shareUrl("copy","share");
+  var fallback=function(){ box.focus(); box.select(); };
+  try{ navigator.clipboard.writeText(box.value).then(function(){ toast(t("copied")); },fallback); }catch(e){ fallback(); }
+  track("share_copy");
+});
+$("wa").addEventListener("click",function(){ track("share_whatsapp"); });
+
+
+/* ---------- feature previews ---------- */
+var TABS=["luku","gepg","qr","card"];
+function setTab(name,focus){
+  TABS.forEach(function(k){
+    var on=k===name, tb=$("tab-"+k);
+    tb.setAttribute("aria-selected",on); tb.tabIndex=on?0:-1; $("pv-"+k).hidden=!on;
+    if(on&&focus) tb.focus();
+  });
+  track("preview_tab",{tab:name});
+}
+document.querySelectorAll("[data-tab]").forEach(function(b){
+  b.addEventListener("click",function(){ setTab(b.getAttribute("data-tab")); });
+  b.addEventListener("keydown",function(e){
+    var i=TABS.indexOf(b.getAttribute("data-tab"));
+    if(e.key==="ArrowRight"){ e.preventDefault(); setTab(TABS[(i+1)%4],true); }
+    if(e.key==="ArrowLeft"){ e.preventDefault(); setTab(TABS[(i+3)%4],true); }
+  });
+});
+function renderStatus(){
+  document.querySelectorAll("[data-status]").forEach(function(el){
+    var live = CONFIG.features[el.getAttribute("data-status")]==="live";
+    el.className="tag "+(live?"live":"soonx"); el.textContent=t(live?"stLive":"stSoon");
+  });
+  document.querySelectorAll(".pv-note").forEach(function(n){ n.hidden=false; });
+}
+
+/* LUKU */
+function tokenStr(){ var s=""; for(var i=0;i<20;i++){ s+=Math.floor(Math.random()*10); if(i%4===3&&i<19) s+=" "; } return s; }
+function luku(){
+  var a=+$("l-amt").value, r=+$("l-rate").value;
+  $("o-lamt").textContent=tsh(a); $("o-lrate").textContent=tsh(r);
+  $("l-units").textContent=(a/r).toFixed(1)+" unit";
+  var util=cats.filter(function(c){return c.k==="utilities";})[0];
+  var left=util.limit-util.spent-a;
+  $("l-budget").textContent=t("lukuBudget")+" "+(left<0?"-":"")+tsh(Math.abs(left));
+}
+["l-amt","l-rate"].forEach(function(id){ $(id).addEventListener("input",luku); });
+$("l-go").addEventListener("click",function(){ $("l-token").textContent=tokenStr(); $("l-tokenbox").hidden=false; track("preview_luku"); });
+
+/* GePG */
+var BILLSX=[
+ {cn:"991234567801",en:"Water bill",sw:"Bili ya maji",payer:"Juma M.",amt:45000,due:"15 Oct 2026"},
+ {cn:"991234567802",en:"Road licence",sw:"Leseni ya barabara",payer:"Juma M.",amt:90000,due:"30 Oct 2026"},
+ {cn:"991234567803",en:"University fees",sw:"Ada ya chuo",payer:"Neema J.",amt:350000,due:"05 Nov 2026"}
+];
+var curBill=null;
+function gChips(){
+  var box=$("g-chips"); box.textContent="";
+  BILLSX.forEach(function(b){ var c=document.createElement("button"); c.type="button"; c.className="chip num"; c.textContent=b.cn+" · "+b[lang]; c.addEventListener("click",function(){ $("g-cn").value=b.cn; gFind(); }); box.appendChild(c); });
+}
+function gShowBill(){
+  var b=curBill; $("g-bill").hidden=!b; if(!b) return;
+  $("g-name").textContent=b[lang]; $("g-payer").textContent=b.payer; $("g-due").textContent=b.due; $("g-amt").textContent=tsh(b.amt);
+}
+function gFind(){
+  var v=$("g-cn").value.replace(/\D/g,""); curBill=null; $("g-done").hidden=true; $("g-pay").disabled=false;
+  if(v.length!==12){ $("g-msg").textContent=t("gShort"); gShowBill(); return; }
+  curBill=BILLSX.filter(function(b){return b.cn===v;})[0]||null;
+  $("g-msg").textContent=curBill?"":t("gNone"); gShowBill(); track("preview_gepg");
+}
+$("g-find").addEventListener("click",gFind);
+$("g-cn").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); gFind(); } });
+$("g-pay").addEventListener("click",function(){
+  var d=$("g-done"); d.hidden=false; d.textContent=t("gPaid")+" MP-"+Math.floor(100000+Math.random()*899999); $("g-pay").disabled=true;
+});
+
+/* QR */
+function drawQr(){
+  var c=$("qrc"), x=c.getContext("2d"), n=29, seed=7;
+  function rnd(){ seed=(seed*16807)%2147483647; return seed/2147483647; }
+  x.fillStyle="#fff"; x.fillRect(0,0,n,n); x.fillStyle="#0D2621";
+  for(var i=0;i<n;i++) for(var j=0;j<n;j++) if(rnd()>0.52) x.fillRect(i,j,1,1);
+  [[0,0],[n-7,0],[0,n-7]].forEach(function(p){
+    x.fillStyle="#fff"; x.fillRect(p[0]-1,p[1]-1,9,9);
+    x.fillStyle="#0D2621"; x.fillRect(p[0],p[1],7,7);
+    x.fillStyle="#fff"; x.fillRect(p[0]+1,p[1]+1,5,5);
+    x.fillStyle="#0D2621"; x.fillRect(p[0]+2,p[1]+2,3,3);
+  });
+}
+drawQr();
+function qrLeft(){
+  var f=cats.filter(function(c){return c.k==="food";})[0];
+  var a=+$("q-amt").value||0, left=f.limit-f.spent-a;
+  $("q-left").textContent=(left<0?"-":"")+tsh(Math.abs(left));
+}
+$("q-amt").addEventListener("input",qrLeft);
+var scanning=null;
+$("q-scan").addEventListener("click",function(){
+  if(scanning) return;
+  var box=$("scan"); box.classList.add("on"); $("q-sheet").hidden=true; $("q-done").hidden=true; $("q-pay").disabled=false;
+  var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  scanning=setTimeout(function(){ box.classList.remove("on"); scanning=null; $("q-sheet").hidden=false; qrLeft(); track("preview_qr"); }, reduce?0:1500);
+});
+$("q-pay").addEventListener("click",function(){
+  var a=+$("q-amt").value; if(!(a>0)) return;
+  var d=$("q-done"); d.hidden=false; d.textContent=t("qDone"); $("q-pay").disabled=true;
+});
+
+/* card */
+function cardUi(){
+  var fr=$("c-freeze").getAttribute("aria-checked")==="true";
+  $("vcard").classList.toggle("frozen",fr);
+  $("vc-state").textContent=t(fr?"cFrozen":"cActive");
+  $("o-climit").textContent=tsh(+$("c-limit").value);
+}
+["c-freeze","c-online"].forEach(function(id){ $(id).addEventListener("click",function(){ var b=$(id); b.setAttribute("aria-checked",b.getAttribute("aria-checked")!=="true"); cardUi(); $("c-res").textContent=""; }); });
+$("c-limit").addEventListener("input",cardUi);
+$("c-test").addEventListener("click",function(){
+  var msg, ok=false;
+  if($("c-freeze").getAttribute("aria-checked")==="true") msg=t("cNoFrozen");
+  else if($("c-online").getAttribute("aria-checked")!=="true") msg=t("cNoOnline");
+  else if(+$("c-limit").value<25000) msg=t("cNoLimit");
+  else { msg=t("cOk"); ok=true; }
+  var r=$("c-res"); r.textContent=msg; r.className="status "+(ok?"ok-msg":"bad-msg"); track("preview_card",{ok:ok});
+});
+
+/* waitlist (shown only when CONFIG.waitlistUrl is set) */
+if(CONFIG.waitlistUrl){ $("wl").hidden=false; }
+$("wl-form").addEventListener("submit",function(e){
+  e.preventDefault();
+  var contact=$("wl-contact").value.trim(); if(!contact) return;
+  fetch(CONFIG.waitlistUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contact:contact,lang:lang,utm:UTM})})
+    .then(function(r){ if(!r.ok) throw new Error("bad"); $("wl-msg").textContent=t("wlOk"); $("wl-contact").value=""; track("waitlist_join"); })
+    .catch(function(){ $("wl-msg").textContent=t("wlErr"); });
+});
+
+
+/* ---------- social links ---------- */
+var SOCIAL_NAMES={tiktok:"TikTok",instagram:"Instagram",whatsapp:"WhatsApp",facebook:"Facebook",youtube:"YouTube",x:"X"};
+function renderSocial(){
+  var keys=Object.keys(SOCIAL_NAMES).filter(function(k){ return CONFIG.social&&CONFIG.social[k]; });
+  ["soc-cta","soc-foot"].forEach(function(id){
+    var box=$(id); box.textContent="";
+    keys.forEach(function(k){ var a=document.createElement("a"); a.href=CONFIG.social[k]; a.target="_blank"; a.rel="noopener"; a.textContent=SOCIAL_NAMES[k]; a.addEventListener("click",function(){ track("social_click",{network:k}); }); box.appendChild(a); });
+  });
+  $("social").hidden=!keys.length; $("foot-soc").hidden=!keys.length;
+}
+
+/* ---------- language + theme-safe render ---------- */
+function applyLang(){
+  document.documentElement.lang = lang;
+  ["c-res","g-msg"].forEach(function(i){ $(i).textContent=""; }); ["g-done","q-done"].forEach(function(i){ $(i).hidden=true; });
+  document.querySelectorAll("[data-t]").forEach(function(el){ var k=el.getAttribute("data-t"); var v=t(k); if(typeof v==="string") el.textContent=v; });
+  document.querySelectorAll("[data-tp]").forEach(function(el){ el.placeholder=t(el.getAttribute("data-tp")); });
+  document.querySelectorAll("[data-tl]").forEach(function(el){ el.setAttribute("aria-label",t(el.getAttribute("data-tl"))); });
+  $("lang-sw").setAttribute("aria-pressed",lang==="sw"); $("lang-en").setAttribute("aria-pressed",lang==="en");
+  $("wa").href="https://wa.me/?text="+encodeURIComponent(t("shareText")+" "+shareUrl("whatsapp","share"));
+  $("linkbox").value=shareUrl("copy","share");
+  $("lt").href=CONFIG.siteUrl+"/terms.html"; $("lp").href=CONFIG.siteUrl+"/privacy.html";
+  $("status").textContent=t("hint");
+  renderStores(); renderDemo(); calc(); household(); renderStatus(); renderSocial(); luku(); gChips(); gShowBill(); qrLeft(); cardUi();
+}
+function setLang(l){ lang=l; try{ localStorage.setItem("mp_lang",l); }catch(e){} applyLang(); track("lang_change",{lang:l}); }
+$("lang-sw").addEventListener("click",function(){ setLang("sw"); });
+$("lang-en").addEventListener("click",function(){ setLang("en"); });
+applyLang();
+track("page_view");
+</script>
+</body>
+</html>
