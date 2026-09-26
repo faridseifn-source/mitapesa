@@ -1,0 +1,209 @@
+const prisma = require("./prisma");
+const { getSetting, getSettingNumber } = require("./settings");
+const { getPaymentGatewayProvider } = require("../services/paymentGateway");
+
+// Generalized across every AI feature that needs cost protection (voice
+// logging today, analytics next) — each feature gets its own settings
+// (e.g. "voice_free_monthly_limit" vs "analytics_free_monthly_limit"),
+// its own AiUsageLog rows (feature field), and its own credit purchases
+// (VoiceCreditPurchase.feature — named for its first use, kept generic
+// since a rename would touch every existing row and caller for no real
+// benefit). One shared set of functions, parameterized by feature,
+// rather than a copy-pasted parallel system per feature.
+
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// A customer's unused purchased credits for this specific feature,
+// oldest purchase first — spending the oldest credits first means a
+// customer's balance is always made up of whichever purchases haven't
+// been exhausted yet, rather than one arbitrary purchase's credits
+// sitting unused forever while newer ones get consumed. Only counts
+// succeeded purchases — a failed charge never created usable credits in
+// the first place. Prisma's query API can't compare two columns of the
+// same row directly (creditsUsed < creditsPurchased isn't expressible as
+// a `where` filter), so this fetches a customer's succeeded purchases
+// and finds the first one with room left in JS — genuinely fine for the
+// small number of purchases any one customer is realistically going to
+// have, and far simpler than a raw SQL query for what's a rare,
+// deliberate action rather than a hot path.
+async function findAvailableCredit(userId, feature) {
+  const purchases = await prisma.voiceCreditPurchase.findMany({
+    where: { userId, feature, status: "succeeded" },
+    orderBy: { createdAt: "asc" },
+  });
+  return purchases.find((p) => p.creditsUsed < p.creditsPurchased) || null;
+}
+
+// Checked before a request for this feature is allowed to actually call
+// OpenAI — this is the enforcement point, not just a display/reporting
+// number. Checked in this specific order, because a customer's own
+// allowance (or purchased credits) should never be able to override the
+// account-wide safety net: even during an active promotion, or with
+// unused purchased credits, the global ceiling below still applies — a
+// customer paying for extra usage is buying priority within the
+// account's overall budget for this feature, not an exemption from it.
+async function checkUsageAllowed(userId, feature) {
+  const monthKey = currentMonthKey();
+  const packSize = await getSettingNumber(`${feature}_credit_pack_size`);
+  const packPriceTzs = await getSettingNumber(`${feature}_credit_pack_price_tzs`);
+
+  const ceilingUsd = await getSettingNumber(`${feature}_monthly_spend_ceiling_usd`);
+  if (ceilingUsd !== undefined && ceilingUsd > 0) {
+    const spent = await prisma.aiUsageLog.aggregate({
+      where: { feature, monthKey },
+      _sum: { estimatedCostUsd: true },
+    });
+    const spentUsd = Number(spent._sum.estimatedCostUsd || 0);
+    if (spentUsd >= ceilingUsd) {
+      return {
+        allowed: false,
+        reason: "This has reached its usage limit for this month and will be back at the start of next month.",
+        // Deliberately no canPurchaseCredits here — the account-wide
+        // ceiling is the reason, and buying more credits wouldn't help:
+        // the ceiling still applies to every customer's usage regardless
+        // of purchased credits, so offering a purchase here would let a
+        // customer pay for something that still wouldn't work.
+      };
+    }
+  }
+
+  const promoUntil = await getSetting(`${feature}_promo_free_until`);
+  const promoActive = Boolean(promoUntil) && new Date(promoUntil) >= new Date();
+  if (promoActive) {
+    return { allowed: true, packSize, packPriceTzs };
+  }
+
+  const freeLimit = await getSettingNumber(`${feature}_free_monthly_limit`);
+  if (freeLimit !== undefined) {
+    const usedThisMonth = await prisma.aiUsageLog.count({
+      where: { userId, feature, monthKey },
+    });
+    if (usedThisMonth < freeLimit) {
+      return { allowed: true, packSize, packPriceTzs, freeUsedThisMonth: usedThisMonth, freeLimit };
+    }
+  }
+
+  // Free allowance exhausted (or none configured) — fall back to any
+  // unused purchased credits before denying outright. Unlike the free
+  // allowance, these never expire at month-end.
+  const credit = await findAvailableCredit(userId, feature);
+  if (credit) {
+    return { allowed: true, usingCreditId: credit.id, packSize, packPriceTzs };
+  }
+
+  return {
+    allowed: false,
+    reason: `You've used your ${freeLimit ?? 0} free uses for this month.`,
+    canPurchaseCredits: true,
+    packSize,
+    packPriceTzs,
+  };
+}
+
+// Recorded only after a request has genuinely succeeded end to end — a
+// failed attempt that never actually reached OpenAI, or failed partway,
+// shouldn't count against a customer's free allowance, purchased
+// credits, or the account's spend ceiling. usingCreditId, when present,
+// is the specific purchase checkUsageAllowed found available — passed
+// straight through rather than re-queried, so what actually gets
+// decremented is guaranteed to be the same record that was checked, not
+// a second, possibly different one a moment later.
+async function recordUsage(userId, feature, estimatedCostUsd, usingCreditId) {
+  await prisma.aiUsageLog.create({
+    data: { userId, feature, monthKey: currentMonthKey(), estimatedCostUsd },
+  });
+  if (usingCreditId) {
+    await prisma.voiceCreditPurchase.update({
+      where: { id: usingCreditId },
+      data: { creditsUsed: { increment: 1 } },
+    });
+  }
+}
+
+// The actual purchase itself — charges the customer via the configured
+// payment gateway (mock today; a real provider later without any change
+// to the caller) and, only on a genuinely successful charge, creates the
+// credits. A failed charge creates no usable credits at all — there's
+// nothing to roll back, since nothing was granted in the first place.
+async function purchaseCredits(userId, feature, featureLabel) {
+  const packSize = await getSettingNumber(`${feature}_credit_pack_size`);
+  const packPrice = await getSettingNumber(`${feature}_credit_pack_price_tzs`);
+  if (!packSize || !packPrice) {
+    return { success: false, failureReason: "Credit purchases aren't configured yet." };
+  }
+
+  const charge = await getPaymentGatewayProvider().chargeCard({
+    userId,
+    amountTzs: packPrice,
+    description: `MitaPesa — ${packSize} ${featureLabel || feature} uses`,
+  });
+
+  if (!charge.success) {
+    await prisma.voiceCreditPurchase.create({
+      data: { userId, feature, creditsPurchased: packSize, amountPaidTzs: packPrice, gatewayReference: charge.gatewayReference, status: "failed" },
+    });
+    return { success: false, failureReason: charge.failureReason || "The payment didn't go through — please try again." };
+  }
+
+  const purchase = await prisma.voiceCreditPurchase.create({
+    data: { userId, feature, creditsPurchased: packSize, amountPaidTzs: packPrice, gatewayReference: charge.gatewayReference, status: "succeeded" },
+  });
+  return { success: true, creditsPurchased: packSize, amountPaidTzs: packPrice, purchaseId: purchase.id };
+}
+
+// A customer's full credit picture for this feature, for admin
+// visibility — this is exactly what was missing when a customer's
+// leftover credits from earlier testing silently kept covering requests
+// after the free allowance was intentionally lowered, with no way for an
+// admin to see why. remaining is derived the same way findAvailableCredit
+// sums it, not duplicated separately, so this can never drift out of
+// sync with what's actually enforced.
+async function getCreditSummary(userId, feature) {
+  const purchases = await prisma.voiceCreditPurchase.findMany({
+    where: { userId, feature },
+    orderBy: { createdAt: "desc" },
+  });
+  const succeeded = purchases.filter((p) => p.status === "succeeded");
+  const totalPurchased = succeeded.reduce((sum, p) => sum + p.creditsPurchased, 0);
+  const totalUsed = succeeded.reduce((sum, p) => sum + p.creditsUsed, 0);
+  return {
+    totalPurchased,
+    totalUsed,
+    remaining: totalPurchased - totalUsed,
+    purchases: purchases.map((p) => ({
+      id: p.id,
+      creditsPurchased: p.creditsPurchased,
+      creditsUsed: p.creditsUsed,
+      amountPaidTzs: Number(p.amountPaidTzs),
+      status: p.status,
+      gatewayReference: p.gatewayReference,
+      createdAt: p.createdAt,
+    })),
+  };
+}
+
+// Marks every one of a customer's unused, succeeded credits for this
+// feature as fully consumed — for clearing out leftover test-purchase
+// credits so the free monthly allowance can actually be tested cleanly,
+// without a purchase made days or weeks earlier still silently covering
+// every request. Deliberately doesn't delete the purchase records
+// themselves: what was actually charged (even in testing, even to the
+// mock gateway) stays as a real, honest history — this only changes
+// what's left to spend, not what happened.
+async function clearCredits(userId, feature) {
+  // Prisma's query API can't compare two columns of the same row directly
+  // (the same limitation findAvailableCredit's own comment explains), so
+  // this fetches the customer's succeeded purchases and updates each one
+  // individually that still has room left — genuinely fine for what's a
+  // rare admin action on one customer's small purchase history, not a
+  // hot path.
+  const purchases = await prisma.voiceCreditPurchase.findMany({ where: { userId, feature, status: "succeeded" } });
+  const toClear = purchases.filter((p) => p.creditsUsed < p.creditsPurchased);
+  await Promise.all(toClear.map((p) => prisma.voiceCreditPurchase.update({ where: { id: p.id }, data: { creditsUsed: p.creditsPurchased } })));
+  return { clearedCount: toClear.length };
+}
+
+module.exports = { currentMonthKey, checkUsageAllowed, recordUsage, purchaseCredits, getCreditSummary, clearCredits };
