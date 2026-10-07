@@ -1,9 +1,10 @@
-import { LayoutDashboard, Users, MessageSquareWarning, Settings, ScrollText, LogOut, ShieldCheck, Megaphone, Landmark, Percent, Package, TrendingUp, UserCog, Scale, DollarSign, Sparkles, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Users, MessageSquareWarning, Settings, ScrollText, LogOut, ShieldCheck, Megaphone, Landmark, Percent, Package, TrendingUp, UserCog, Scale, DollarSign, Sparkles, GraduationCap, UserX } from "lucide-react";
 import { ROLE_LABEL } from "./ui.jsx";
 
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, minRole: "admin_viewer" },
   { key: "users", label: "Mobile app users", icon: Users, minRole: "admin_viewer" },
+  { key: "closedAccounts", label: "Closed accounts", icon: UserX, minRole: "admin_viewer" },
   { key: "tickets", label: "Requests & disputes", icon: MessageSquareWarning, minRole: "admin_viewer" },
   { key: "institutions", label: "Institutions", icon: Landmark, minRole: "admin_viewer" },
   { key: "feeRules", label: "Fee rules", icon: Percent, minRole: "admin_viewer" },
