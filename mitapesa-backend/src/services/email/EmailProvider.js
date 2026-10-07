@@ -18,6 +18,16 @@ class EmailProvider {
   async sendVerificationCode(toEmail, code) {
     throw new Error("sendVerificationCode not implemented");
   }
+
+  /** @param {string} toEmail — confirmation that the customer deleted their own account */
+  async sendAccountDeleted(toEmail) {
+    throw new Error("sendAccountDeleted not implemented");
+  }
+
+  /** @param {string} toEmail — notice that an admin restored a previously deleted account */
+  async sendAccountRestored(toEmail) {
+    throw new Error("sendAccountRestored not implemented");
+  }
 }
 
 module.exports = { EmailProvider };

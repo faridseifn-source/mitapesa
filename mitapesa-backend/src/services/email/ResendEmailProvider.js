@@ -63,6 +63,47 @@ class ResendEmailProvider extends EmailProvider {
       throw new Error(`Resend failed to send: ${error.message || JSON.stringify(error)}`);
     }
   }
+
+  // Sent after the account is already gone, to the address it used. Doubles
+  // as a security notice: if someone deleted the account without the owner's
+  // knowledge, this is the owner's first and only signal.
+  async sendAccountDeleted(toEmail) {
+    const { error } = await this.client.emails.send({
+      from: this.fromAddress,
+      to: toEmail,
+      subject: "Your MitaPesa account has been deleted",
+      html: `
+        <div style="font-family: sans-serif; max-width: 420px; margin: 0 auto;">
+          <p>Your MitaPesa account has been deleted, and your personal data — expenses, budgets, categories and saved devices — has been removed.</p>
+          <p style="color: #666; font-size: 13px;">Records of payments and identity checks that we must keep for financial and legal reasons are retained with your name, email and phone number removed.</p>
+          <p style="color: #666; font-size: 13px;">If you didn't ask for this, please contact us straight away.</p>
+        </div>
+      `,
+    });
+    if (error) {
+      throw new Error(`Resend failed to send: ${error.message || JSON.stringify(error)}`);
+    }
+  }
+
+  // Restoring a deleted account is an unusual, admin-initiated action on
+  // someone's personal data, so the owner is always told. If it wasn't them
+  // asking, this email is how they find out.
+  async sendAccountRestored(toEmail) {
+    const { error } = await this.client.emails.send({
+      from: this.fromAddress,
+      to: toEmail,
+      subject: "Your MitaPesa account has been restored",
+      html: `
+        <div style="font-family: sans-serif; max-width: 420px; margin: 0 auto;">
+          <p>Your MitaPesa account has been restored by our team, with the data it held when it was deleted. You can sign in again with your previous password.</p>
+          <p style="color: #666; font-size: 13px;">If you didn't ask for this, please contact us straight away.</p>
+        </div>
+      `,
+    });
+    if (error) {
+      throw new Error(`Resend failed to send: ${error.message || JSON.stringify(error)}`);
+    }
+  }
 }
 
 module.exports = { ResendEmailProvider };
