@@ -143,6 +143,16 @@ class BpcSmartVistaSimProvider extends CardIssuingProvider {
     return this._snapshot(card);
   }
 
+  // Real operation: most likely the same ChangeCardStatus call with a
+  // permanent-closure status code, preceded by whatever payout of the
+  // remaining balance the bank requires — to be confirmed with the partner
+  // bank; nothing here assumes which codes or steps they use.
+  async requestClosure(externalCardId) {
+    await this._simulateLatency();
+    await prisma.card.update({ where: { id: externalCardId }, data: { frozen: true } });
+    return { reference: `CLR-${require("crypto").randomBytes(4).toString("hex").toUpperCase()}`, status: "pending" };
+  }
+
   // Real operation: closest analog is ChangeCardRestrictions (SVWG §1.15) —
   // BPC's restriction model is transaction-type/channel based (POS, ATM,
   // e-commerce, etc.), which online/contactless/atm here maps onto directly.

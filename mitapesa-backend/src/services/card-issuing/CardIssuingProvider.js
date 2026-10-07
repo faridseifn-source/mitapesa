@@ -48,6 +48,19 @@ class CardIssuingProvider {
     throw new Error("setFrozen not implemented");
   }
 
+  /**
+   * Ask the issuer to close the card account — distinct from setFrozen, which
+   * is a temporary block. Closing a card that still holds money is a process
+   * on the bank's side (the balance has to be paid out first), so this only
+   * RAISES the request; it does not complete it.
+   * @param {string} externalCardId
+   * @param {{ reason?: string }} params
+   * @returns {Promise<{ reference: string, status: "pending" }>}
+   */
+  async requestClosure(externalCardId, params) {
+    throw new Error("requestClosure not implemented");
+  }
+
   /** @param {string} externalCardId @param {Object} controls e.g. { online, contactless, atm } */
   async setControls(externalCardId, controls) {
     throw new Error("setControls not implemented");

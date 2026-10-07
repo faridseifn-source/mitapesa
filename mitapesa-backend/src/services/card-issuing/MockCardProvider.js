@@ -61,6 +61,14 @@ class MockCardProvider extends CardIssuingProvider {
     return this._snapshot(card);
   }
 
+  // A real issuer would open a closure case with the bank. The mock can only
+  // lock the card and hand back a reference — closing it for real is a manual
+  // step an admin records on the card-closure request.
+  async requestClosure(externalCardId) {
+    await prisma.card.update({ where: { id: externalCardId }, data: { frozen: true } });
+    return { reference: `CLR-${require("crypto").randomBytes(4).toString("hex").toUpperCase()}`, status: "pending" };
+  }
+
   async setControls(externalCardId, controls) {
     const card = await prisma.card.update({ where: { id: externalCardId }, data: { controls } });
     return this._snapshot(card);
