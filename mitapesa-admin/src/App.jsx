@@ -18,6 +18,7 @@ import ReconciliationPage from "./pages/ReconciliationPage.jsx";
 import ExchangeRatesPage from "./pages/ExchangeRatesPage.jsx";
 import AiUsagePage from "./pages/AiUsagePage.jsx";
 import OnboardingTipsPage from "./pages/OnboardingTipsPage.jsx";
+import ClosedAccountsPage from "./pages/ClosedAccountsPage.jsx";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -77,6 +78,7 @@ export default function App() {
       {page === "exchangeRates" && <ExchangeRatesPage user={user} />}
       {page === "aiUsage" && <AiUsagePage user={user} />}
       {page === "onboardingTips" && <OnboardingTipsPage user={user} />}
+      {page === "closedAccounts" && <ClosedAccountsPage user={user} />}
       {page === "audit" && user.role !== "admin_viewer" && <AuditLogPage user={user} />}
     </Shell>
   );

@@ -163,6 +163,21 @@ export const adminApi = {
     remove: (key) => raw(`/admin/onboarding-tips/${key}`, { method: "DELETE" }),
   },
 
+  // Customers who deleted their own account: statistics, the archived copy
+  // of their data (view / export / restore / erase), and the queue of card
+  // closure requests raised when a deletion was paused by funds on a card.
+  accountLifecycle: {
+    stats: () => raw("/admin/account-lifecycle/stats"),
+    archives: (params) => raw(`/admin/account-lifecycle/archives?${qs(params)}`),
+    archive: (id) => raw(`/admin/account-lifecycle/archives/${id}`),
+    archiveTransactions: (id, params) => raw(`/admin/account-lifecycle/archives/${id}/transactions?${qs(params)}`),
+    exportArchive: (id, userId) => downloadFile(`/admin/account-lifecycle/archives/${id}/export`, `mitapesa-archive-${userId}.json`),
+    restore: (id, note) => raw(`/admin/account-lifecycle/archives/${id}/restore`, { method: "POST", body: { note } }),
+    purge: (id) => raw(`/admin/account-lifecycle/archives/${id}/purge`, { method: "POST", body: { confirm: true } }),
+    closureRequests: (status) => raw(`/admin/account-lifecycle/closure-requests?${qs({ status })}`),
+    resolveClosure: (id, status, note) => raw(`/admin/account-lifecycle/closure-requests/${id}/resolve`, { method: "POST", body: { status, note } }),
+  },
+
   auditLogs: (filters = {}, page = 1, pageSize = 25) => raw(`/admin/audit-logs?${qs({ ...filters, page, pageSize })}`),
 
   broadcasts: {
