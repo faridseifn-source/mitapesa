@@ -9,7 +9,7 @@ const router = Router();
 // this whitelist is a plain feature toggle, not sensitive data. Never add
 // a key here without checking it's genuinely safe to expose with no auth
 // at all (nothing about BIN, CMS provider internals, or admin-only config).
-const PUBLIC_KEYS = ["qr_test_samples_enabled", "qr_manual_payload_paste_enabled", "qr_step_up_threshold", "biometric_login_enabled", "push_notifications_enabled", "receipt_ocr_enabled", "pfm_export_enabled", "pay_module_enabled", "multi_currency_enabled", "available_currencies", "verification_method", "household_max_members", "account_archive_retention_days", "regulated_records_retention_years"];
+const PUBLIC_KEYS = ["qr_test_samples_enabled", "qr_manual_payload_paste_enabled", "qr_step_up_threshold", "biometric_login_enabled", "push_notifications_enabled", "receipt_ocr_enabled", "pfm_export_enabled", "pay_module_enabled", "pay_tab_visible", "multi_currency_enabled", "available_currencies", "verification_method", "household_max_members", "account_archive_retention_days", "regulated_records_retention_years"];
 
 router.get(
   "/public",
