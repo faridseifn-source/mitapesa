@@ -75,7 +75,7 @@ class ResendEmailProvider extends EmailProvider {
       html: `
         <div style="font-family: sans-serif; max-width: 420px; margin: 0 auto;">
           <p>Your MitaPesa account has been deleted, and your personal data — expenses, budgets, categories and saved devices — has been removed.</p>
-          <p style="color: #666; font-size: 13px;">Records of payments and identity checks that we must keep for financial and legal reasons are retained with your name, email and phone number removed.</p>
+          <p style="color: #666; font-size: 13px;">If you used a MitaPesa card, completed an identity check or made payments, financial regulations require us to keep those records — including your name and identity details held in them — for the regulated period after you close your account. They are stored securely and used only for legal and regulatory purposes.</p>
           <p style="color: #666; font-size: 13px;">If you didn't ask for this, please contact us straight away.</p>
         </div>
       `,
