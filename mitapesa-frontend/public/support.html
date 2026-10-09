@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MitaPesa Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F4EE;
+    --bg-soft: #EFEBE1;
+    --card: #FFFFFF;
+    --ink: #12201A;
+    --ink-soft: #5C685F;
+    --ink-faint: #8A9189;
+    --border: #E4E0D3;
+    --accent: #1F6F50;
+    --accent-soft: #E4F0E9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+  }
+  header.top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2.5rem;
+  }
+  .mark {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mark svg { width: 18px; height: 18px; }
+  .brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.4rem;
+  }
+  .dates {
+    color: var(--ink-faint);
+    font-size: 13px;
+    margin-bottom: 2.5rem;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 2rem 2rem 2.25rem;
+  }
+  h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--ink);
+    margin: 2.25rem 0 0.85rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .card h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  p { color: var(--ink-soft); font-size: 14.5px; margin: 0 0 0.9rem; }
+  strong { color: var(--ink); font-weight: 600; }
+  ul { margin: 0 0 0.9rem; padding-left: 1.2rem; }
+  li { color: var(--ink-soft); font-size: 14.5px; margin-bottom: 0.5rem; }
+  .contact-block {
+    background: var(--accent-soft);
+    border-radius: 14px;
+    padding: 1.1rem 1.3rem;
+    margin-top: 0.5rem;
+  }
+  .contact-block p { margin: 0.2rem 0; color: var(--ink); font-size: 14.5px; }
+  .contact-block a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .disclaimer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--border);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+  footer {
+    text-align: center;
+    margin-top: 2.5rem;
+    color: var(--ink-faint);
+    font-size: 12.5px;
+  }
+  ol { margin: 0 0 0.9rem; padding-left: 1.3rem; }
+  .note { background: var(--bg-soft); border-radius: 14px; padding: 0.9rem 1.2rem; margin: 0 0 0.9rem; }
+  .note p { margin: 0.2rem 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+    <div class="mark">
+      <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="256" cy="256" r="230" fill="#1F6F50" />
+        <path d="M130 256 L200 256 L232 190 L288 340 L320 256 L382 256" fill="none" stroke="#45B383" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </div>
+    <span class="brand">MitaPesa</span>
+  </header>
+<h1>MitaPesa Support</h1>
+<div class="dates">We usually reply within 1–2 business days.</div>
+<div class="card">
+<h2>Contact us</h2>
+<p>Email <a href="mailto:info@dugapay.com?subject=MitaPesa%20support">info@dugapay.com</a> with your registered email address and a short description of the problem. Please never send your password.</p>
+<h2>Common questions</h2>
+<p><strong>I forgot my password.</strong> On the login screen, tap "Forgot password?" and follow the email steps.</p>
+<p><strong>How do I delete my account?</strong> In the app, go to Profile and tap "Delete account", or see <a href="/delete-account.html">how to delete your account</a>.</p>
+<p><strong>How is my data used?</strong> Read our <a href="/privacy.html">Privacy Policy</a>.</p>
+</div>
+</div>
+</body>
+</html>
