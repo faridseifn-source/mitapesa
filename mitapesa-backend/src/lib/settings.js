@@ -77,6 +77,15 @@ const DEFAULTS = {
   // Apple expects deletion to actually remove personal data, and tells
   // developers to say how long it takes.
   account_archive_retention_days: "90",
+  // How many years the identity and transaction records of a customer who has
+  // used a prepaid card (or completed an identity check, or made payments) are
+  // kept AFTER their account is closed — Tanzania's AML record-keeping rule,
+  // which the business has confirmed as 10 years. After the period ends nothing
+  // is erased automatically: the record is flagged for review and can be kept
+  // or released by a super admin. Applies to accounts closed from now on; the
+  // Regulated records page can recalculate existing records after a change.
+  // "0" = no end date. The app quotes this number to customers when they delete.
+  regulated_records_retention_years: "10",
   // Admin controls for the multi-currency PFM feature: whether customers
   // can change their running currency at all, and which currencies are
   // offered. A comma-separated list rather than a fixed array — an admin

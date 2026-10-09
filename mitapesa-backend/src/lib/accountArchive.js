@@ -181,6 +181,11 @@ async function restoreArchive({ archiveId, adminUserId, note, ip }) {
       await tx.userSeenTip.createMany({ data: d.seenTips, skipDuplicates: true });
       await tx.supportTicket.createMany({ data: d.supportTickets, skipDuplicates: true });
 
+      // The account is open again, so its regulatory register entry stops being
+      // a "closed account" (the records themselves never left their tables). If
+      // the customer closes again, a fresh entry is created.
+      await tx.regulatedRetention.updateMany({ where: { userId: user.id, status: "retained" }, data: { status: "reopened" } });
+
       // The data is live again; keeping a second copy would be a second place
       // to protect. The row stays, with only its non-personal figures.
       await tx.accountArchive.update({

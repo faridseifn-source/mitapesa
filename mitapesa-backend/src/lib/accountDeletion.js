@@ -7,6 +7,7 @@ const { isAdminRole } = require("./adminRoles");
 const { getEmailProvider } = require("../services/email");
 const { getCardIssuingProvider } = require("../services/card-issuing");
 const { collectSnapshot, getRetentionDays, GENERAL_TICKET_CATEGORIES, FORMER_MEMBER } = require("./accountArchive");
+const { getRetentionYears, buildRegisterEntry } = require("./regulatedRetention");
 
 /**
  * A customer deleting their own account from inside the app (App Store
@@ -36,7 +37,15 @@ const { collectSnapshot, getRetentionDays, GENERAL_TICKET_CATEGORIES, FORMER_MEM
  *      records still have something to point at, and the original email and
  *      phone become free to register again.
  *   4. RETAINED_FOR_COMPLIANCE is what is NOT archived and NOT deleted: it
- *      stays in its own tables, untouched, indefinitely.
+ *      stays in its own tables, untouched.
+ *   5. REGULATED CUSTOMERS. If the customer ever had a prepaid card, an
+ *      identity check or payments, Tanzanian AML record-keeping applies (10
+ *      years, an admin setting). A RegulatedRetention register row is created
+ *      so their records stay findable by name, phone, email, NIDA number or
+ *      card digits after the login account is anonymized — see
+ *      lib/regulatedRetention.js. The stored full card number and security code
+ *      are scrubbed (the card is closed; the ledger and last four digits stay).
+ *      A PFM-only customer gets no register row: nothing is legally required.
  *
  * KNOWN LIMIT: the card-issuing contract can freeze a card and raise a
  * closure request, but cannot confirm closure — that is a process with the
@@ -50,6 +59,7 @@ const RETAINED_FOR_COMPLIANCE = [
   "Fee quotes and the security audit log",
   "Dispute and fraud support tickets",
   "Proof of consent to the Terms (timestamp and version only — IP address is removed)",
+  "The closed-account regulatory register (for customers who had a card, identity check or payments)",
 ];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -133,6 +143,16 @@ async function deleteOwnAccount({ userId, password, reason, ip }) {
   // ---- 2. Take the archive snapshot BEFORE anything is changed.
   const retentionDays = await getRetentionDays();
   const snapshot = await collectSnapshot(user, memberships);
+
+  // Regulated relationship? Decided now, from what exists, before any change.
+  const closedAt = new Date();
+  const [heldCards, kyc, paymentCount, retentionYears] = await Promise.all([
+    prisma.virtualCard.findMany({ where: { holderId: userId, ownerId: { not: userId } } }),
+    prisma.kycVerification.findUnique({ where: { userId } }),
+    prisma.qrPayment.count({ where: { userId } }),
+    getRetentionYears(),
+  ]);
+  const registerEntry = buildRegisterEntry({ user, card, ownedVirtualCards, heldCards, kyc, paymentCount, years: retentionYears, closedAt });
   const removedWalletIds = new Set(memberships.filter((m) => m.wallet.members.every((x) => x.userId === userId)).map((m) => m.walletId));
 
   const originalEmail = user.email;
@@ -177,6 +197,15 @@ async function deleteOwnAccount({ userId, password, reason, ip }) {
           },
         });
         archiveId = archive.id;
+
+        if (registerEntry) {
+          await tx.regulatedRetention.create({ data: registerEntry });
+          // The card is closed and the money is gone, so the stored full number
+          // and security code serve no purpose — and the security code should
+          // not be kept at all. The ledger and the last four digits stay.
+          if (card) await tx.card.update({ where: { userId }, data: { fullNumberEnc: null, cvvEnc: null } });
+          await tx.virtualCard.updateMany({ where: { ownerId: userId }, data: { fullNumberEnc: null, cvvEnc: null } });
+        }
 
         for (const m of memberships) {
           if (removedWalletIds.has(m.walletId)) {
@@ -264,7 +293,7 @@ async function deleteOwnAccount({ userId, password, reason, ip }) {
     throw err;
   }
 
-  await writeAudit(userId, "account.deleted", { ip, archiveId, reason: reason || null });
+  await writeAudit(userId, "account.deleted", { ip, archiveId, reason: reason || null, regulated: !!registerEntry });
 
   // Best-effort and after the fact: the account is already gone, so a mail
   // failure must not turn a completed deletion into an error screen.
@@ -274,7 +303,7 @@ async function deleteOwnAccount({ userId, password, reason, ip }) {
     console.error("Account-deleted confirmation email failed:", err.message); // eslint-disable-line no-console
   }
 
-  return { deleted: true, archiveId };
+  return { deleted: true, archiveId, regulated: !!registerEntry };
 }
 
 module.exports = { deleteOwnAccount, RETAINED_FOR_COMPLIANCE };
