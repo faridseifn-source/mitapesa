@@ -9,6 +9,10 @@ const { writeAudit } = require("../../lib/audit");
 const { notifyUser } = require("../../lib/notify");
 const { getCardIssuingProvider } = require("../../services/card-issuing");
 const { restoreArchive, purgeArchive, getRetentionDays } = require("../../lib/accountArchive");
+const { decryptField } = require("../../lib/crypto");
+const { computeStatement } = require("../../lib/statement");
+const { combinedStatementToCsv, sendCsv } = require("../../lib/csv");
+const { hashNida, getRetentionYears, retentionState, setLegalHold, releaseRecords, recalculateEndDates } = require("../../lib/regulatedRetention");
 
 /**
  * Admin side of "delete my account": the statistics on closed accounts, read
@@ -54,7 +58,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const now = new Date();
     const firstMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    const [byStatus, last30Days, openClosureRequests, recent, reasons, tenureRows, withCard, expiringIn7Days, retentionDays] = await Promise.all([
+    const [byStatus, last30Days, openClosureRequests, recent, reasons, tenureRows, withCard, expiringIn7Days, retentionDays, regRetained, regEnded, regHold, regReleased, regYears] = await Promise.all([
       prisma.accountArchive.groupBy({ by: ["status"], _count: { _all: true } }),
       prisma.accountArchive.count({ where: { archivedAt: { gte: new Date(now.getTime() - 30 * DAY_MS) } } }),
       prisma.cardClosureRequest.count({ where: { status: "pending" } }),
@@ -64,6 +68,11 @@ router.get(
       prisma.accountArchive.count({ where: { hadCard: true } }),
       prisma.accountArchive.count({ where: { status: "archived", purgeAfter: { not: null, lte: new Date(now.getTime() + 7 * DAY_MS) } } }),
       getRetentionDays(),
+      prisma.regulatedRetention.count({ where: { status: "retained", legalHold: false, OR: [{ retainUntil: null }, { retainUntil: { gt: now } }] } }),
+      prisma.regulatedRetention.count({ where: { status: "retained", legalHold: false, retainUntil: { lte: now } } }),
+      prisma.regulatedRetention.count({ where: { status: "retained", legalHold: true } }),
+      prisma.regulatedRetention.count({ where: { status: "released" } }),
+      getRetentionYears(),
     ]);
 
     const count = (status) => byStatus.find((r) => r.status === status)?._count._all || 0;
@@ -97,6 +106,9 @@ router.get(
       withCard,
       expiringIn7Days,
       retentionDays,
+      // Customers who had a card, identity check or payments: their records are
+      // kept for the regulated period and listed on the Regulated records tab.
+      regulated: { retained: regRetained, retentionEnded: regEnded, onHold: regHold, released: regReleased, retentionYears: regYears },
     });
   })
 );
@@ -348,6 +360,232 @@ router.post(
     }).catch((err) => console.error("Closure notification failed:", err.message)); // eslint-disable-line no-console
 
     res.json({ request: { ...updated, balance: Number(updated.balance) } });
+  })
+);
+
+
+// ---------------------------------------------------------------------------
+// Regulated records (Tanzanian AML record-keeping)
+//
+// Customers who had a prepaid card, an identity check or payments keep their
+// identity and transaction records for the regulated period (an admin setting)
+// after they close their account. This section is how those records are found
+// and produced — to a regulator, to law enforcement, to the partner bank —
+// long after the login account is anonymized. All of it is support tier and
+// above, every view is audit-logged, and nothing here deletes anything except
+// the explicit, super-admin-only release of an entry whose period has ended
+// and that is not under a legal hold.
+// ---------------------------------------------------------------------------
+const STATE_WHERE = (now) => ({
+  retained: { status: "retained", legalHold: false, OR: [{ retainUntil: null }, { retainUntil: { gt: now } }] },
+  ended: { status: "retained", legalHold: false, retainUntil: { lte: now } },
+  hold: { status: "retained", legalHold: true },
+  released: { status: "released" },
+  reopened: { status: "reopened" },
+});
+
+// The stored NIDA hash is only ever used to MATCH a number typed into the search
+// box, server-side. It is a plain unsalted SHA-256 of a number with a predictable
+// shape — weak enough that it must not be handed to anyone, admin or not.
+const withState = (row) => {
+  const { nidaNumberHash, ...rest } = row;
+  return { ...rest, state: retentionState(row) };
+};
+
+router.get(
+  "/regulated",
+  requireAdminRole("admin_support"),
+  asyncHandler(async (req, res) => {
+    const q = pageQuery.extend({ search: z.string().trim().optional(), state: z.enum(["retained", "ended", "hold", "released", "reopened"]).optional() }).parse(req.query);
+    const digits = (q.search || "").replace(/[\s-]/g, "");
+    const and = [];
+    if (q.state) and.push(STATE_WHERE(new Date())[q.state]);
+    if (q.search) {
+      and.push({
+        OR: [
+          { fullName: { contains: q.search, mode: "insensitive" } },
+          { email: { contains: q.search, mode: "insensitive" } },
+          { phone: { contains: q.search } },
+          { cardLast4: { contains: q.search } },
+          // A regulator will quote the 20-digit NIDA number; only its hash is stored.
+          ...(/^\d{20}$/.test(digits) ? [{ nidaNumberHash: hashNida(digits) }] : []),
+        ],
+      });
+    }
+    const where = and.length ? { AND: and } : {};
+    const [total, records] = await Promise.all([
+      prisma.regulatedRetention.count({ where }),
+      prisma.regulatedRetention.findMany({ where, orderBy: { closedAt: "desc" }, skip: (q.page - 1) * q.pageSize, take: q.pageSize }),
+    ]);
+    await writeAudit(req.userId, "admin.regulated_listed", { ip: req.ip, searched: !!q.search });
+    res.json({ records: records.map(withState), total, page: q.page, pageSize: q.pageSize });
+  })
+);
+
+// What the stored NIDA profile says, decrypted — the same details, to the same
+// tier, as the existing GET /admin/users/:userId/kyc.
+async function decryptedIdentity(userId) {
+  const p = await prisma.kycNidaProfile.findUnique({ where: { userId } });
+  if (!p) return null;
+  return {
+    firstName: decryptField(p.firstNameEnc), middleName: decryptField(p.middleNameEnc), lastName: decryptField(p.lastNameEnc),
+    sex: decryptField(p.sexEnc), dateOfBirth: decryptField(p.dateOfBirthEnc), placeOfBirth: decryptField(p.placeOfBirthEnc),
+    citizenshipType: decryptField(p.citizenshipTypeEnc), nidaPhone: decryptField(p.nidaPhoneEnc),
+    region: decryptField(p.regionEnc), district: decryptField(p.districtEnc), ward: decryptField(p.wardEnc), villageOrStreet: decryptField(p.villageOrStreetEnc),
+  };
+}
+
+// Card columns an admin may read — never the (already scrubbed) encrypted number or security code.
+const CARD_PUBLIC = { id: true, last4: true, holderName: true, expiry: true, frozen: true, balance: true, processorRef: true };
+const VCARD_PUBLIC = { id: true, last4: true, label: true, type: true, ownerId: true, holderId: true, terminated: true, frozen: true, balance: true, createdAt: true };
+
+router.get(
+  "/regulated/:id",
+  requireAdminRole("admin_support"),
+  asyncHandler(async (req, res) => {
+    const record = await prisma.regulatedRetention.findUnique({ where: { id: req.params.id } });
+    if (!record) throw notFound("Record not found");
+    const userId = record.userId;
+    const [tomb, card, virtualCards, kyc, payments, tickets, closureRequests, identity] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true, deletedAt: true, termsAcceptedAt: true, termsVersion: true } }),
+      prisma.card.findUnique({ where: { userId }, select: CARD_PUBLIC }),
+      prisma.virtualCard.findMany({ where: { OR: [{ ownerId: userId }, { holderId: userId }] }, select: VCARD_PUBLIC }),
+      prisma.kycVerification.findUnique({ where: { userId }, select: { status: true, method: true, attempts: true, verifiedAt: true, createdAt: true } }),
+      prisma.qrPayment.findMany({ where: { userId }, select: { amount: true, status: true, createdAt: true } }),
+      prisma.supportTicket.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, select: { id: true, category: true, subject: true, status: true, disputedAmount: true, disputedMerchant: true, createdAt: true } }),
+      prisma.cardClosureRequest.findMany({ where: { userId }, orderBy: { requestedAt: "desc" } }),
+      record.status === "released" ? null : decryptedIdentity(userId),
+    ]);
+    const completed = payments.filter((p) => p.status === "completed");
+    await writeAudit(req.userId, "admin.regulated_viewed", { ip: req.ip, targetUserId: userId, retentionId: record.id });
+    res.json({
+      record: withState(record),
+      account: tomb,
+      card: card ? { ...card, balance: Number(card.balance) } : null,
+      virtualCards: virtualCards.map((c) => ({ ...c, balance: Number(c.balance) })),
+      kyc,
+      identity,
+      payments: {
+        count: payments.length,
+        completed: completed.length,
+        totalCompleted: completed.reduce((sum, p) => sum + Number(p.amount), 0),
+        firstAt: payments.length ? new Date(Math.min(...payments.map((p) => +new Date(p.createdAt)))) : null,
+        lastAt: payments.length ? new Date(Math.max(...payments.map((p) => +new Date(p.createdAt)))) : null,
+      },
+      tickets: tickets.map((t) => ({ ...t, disputedAmount: t.disputedAmount === null ? null : Number(t.disputedAmount) })),
+      closureRequests: closureRequests.map((r) => ({ ...r, balance: Number(r.balance) })),
+    });
+  })
+);
+
+router.get(
+  "/regulated/:id/payments",
+  requireAdminRole("admin_support"),
+  asyncHandler(async (req, res) => {
+    const q = pageQuery.extend({ from: z.string().optional(), to: z.string().optional() }).parse(req.query);
+    const record = await prisma.regulatedRetention.findUnique({ where: { id: req.params.id }, select: { id: true, userId: true } });
+    if (!record) throw notFound("Record not found");
+    const range = {};
+    if (q.from) range.gte = new Date(q.from);
+    if (q.to) { const end = new Date(q.to); end.setHours(23, 59, 59, 999); range.lte = end; }
+    const where = { userId: record.userId, ...(Object.keys(range).length ? { createdAt: range } : {}) };
+    const [total, rows] = await Promise.all([
+      prisma.qrPayment.count({ where }),
+      prisma.qrPayment.findMany({ where, orderBy: { createdAt: "desc" }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: { merchant: { select: { name: true, city: true } } } }),
+    ]);
+    await writeAudit(req.userId, "admin.regulated_data_viewed", { ip: req.ip, targetUserId: record.userId, retentionId: record.id, what: "payments" });
+    res.json({
+      total, page: q.page, pageSize: q.pageSize,
+      payments: rows.map((p) => ({ id: p.id, reference: p.reference, date: p.createdAt, amount: Number(p.amount), feeAmount: Number(p.feeAmount || 0), status: p.status, merchant: p.merchant?.name || "—", city: p.merchant?.city || null })),
+    });
+  })
+);
+
+// A card statement for ANY period — the regulator's "everything between X and Y".
+// Same calculation as the customer's own statement; CSV for filing.
+router.get(
+  "/regulated/:id/statement",
+  requireAdminRole("admin_support"),
+  asyncHandler(async (req, res) => {
+    const record = await prisma.regulatedRetention.findUnique({ where: { id: req.params.id } });
+    if (!record) throw notFound("Record not found");
+    const card = await prisma.card.findUnique({ where: { userId: record.userId } });
+    if (!card) throw notFound("No card on record for this customer");
+    const from = req.query.from ? new Date(req.query.from) : new Date(record.accountCreatedAt);
+    const to = req.query.to ? new Date(req.query.to) : new Date();
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) throw badRequest("Invalid from/to date");
+    const toEnd = new Date(to); toEnd.setHours(23, 59, 59, 999);
+    const activitySinceFrom = await prisma.cardActivity.findMany({ where: { cardId: card.id, date: { gte: from } }, orderBy: { date: "asc" } });
+    const financial = computeStatement({ currentBalance: Number(card.balance), activitySinceFrom, from, to: toEnd });
+    await writeAudit(req.userId, "admin.regulated_data_viewed", { ip: req.ip, targetUserId: record.userId, retentionId: record.id, what: "statement", format: req.query.format || "json" });
+    if (req.query.format === "csv") {
+      return sendCsv(res, `mitapesa-regulated-statement-${record.userId}-${from.toISOString().slice(0, 10)}-to-${to.toISOString().slice(0, 10)}.csv`, combinedStatementToCsv({ source: "financial", from, to: toEnd, financial, pfm: null }));
+    }
+    res.json({ from, to: toEnd, financial });
+  })
+);
+
+// The whole file on a customer as one JSON document: what to hand over when an
+// authority asks. No encrypted card secrets, no password hash.
+router.get(
+  "/regulated/:id/export",
+  requireAdminRole("admin_support"),
+  asyncHandler(async (req, res) => {
+    const record = await prisma.regulatedRetention.findUnique({ where: { id: req.params.id } });
+    if (!record) throw notFound("Record not found");
+    const userId = record.userId;
+    const [tomb, card, virtualCards, payments, feeQuotes, tickets, purchases, kyc, audits, closureRequests] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true, deletedAt: true, termsAcceptedAt: true, termsVersion: true, language: true, preferredCurrency: true } }),
+      prisma.card.findUnique({ where: { userId }, select: CARD_PUBLIC }),
+      prisma.virtualCard.findMany({ where: { OR: [{ ownerId: userId }, { holderId: userId }] }, select: VCARD_PUBLIC }),
+      prisma.qrPayment.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+      prisma.feeQuote.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+      prisma.supportTicket.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+      prisma.voiceCreditPurchase.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+      prisma.kycVerification.findUnique({ where: { userId }, select: { status: true, method: true, attempts: true, verifiedAt: true, createdAt: true } }),
+      prisma.auditLog.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { action: true, amount: true, metadata: true, ip: true, createdAt: true } }),
+      prisma.cardClosureRequest.findMany({ where: { userId }, orderBy: { requestedAt: "asc" } }),
+    ]);
+    const cardActivity = card ? await prisma.cardActivity.findMany({ where: { cardId: card.id }, orderBy: { date: "asc" } }) : [];
+    const vcIds = virtualCards.map((c) => c.id);
+    const virtualCardActivity = vcIds.length ? await prisma.virtualCardActivity.findMany({ where: { cardId: { in: vcIds } }, orderBy: { createdAt: "asc" } }) : [];
+    const identity = record.status === "released" ? null : await decryptedIdentity(userId);
+
+    await writeAudit(req.userId, "admin.regulated_exported", { ip: req.ip, targetUserId: userId, retentionId: record.id });
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="mitapesa-regulated-${userId}.json"`);
+    res.send(JSON.stringify({ exportedAt: new Date(), record: withState(record), account: tomb, identity, kyc, card, cardActivity, virtualCards, virtualCardActivity, qrPayments: payments, feeQuotes, supportTickets: tickets, creditPurchases: purchases, closureRequests, auditLog: audits }, null, 2));
+  })
+);
+
+// Legal hold: while set, the record can't be released, however old it is.
+router.post(
+  "/regulated/:id/hold",
+  requireAdminRole("admin_super"),
+  asyncHandler(async (req, res) => {
+    const { hold, reason } = z.object({ hold: z.boolean(), reason: z.string().trim().max(500).optional() }).parse(req.body);
+    res.json(await setLegalHold({ id: req.params.id, hold, reason, adminUserId: req.userId, ip: req.ip }));
+  })
+);
+
+// Releasing erases the customer's identity details once the period has ended.
+// Never automatic; the ledgers themselves are untouched.
+router.post(
+  "/regulated/:id/release",
+  requireAdminRole("admin_super"),
+  asyncHandler(async (req, res) => {
+    const { note } = z.object({ note: z.string().trim().min(3, "Say why this record is being released").max(500) }).parse(req.body);
+    res.json(await releaseRecords({ id: req.params.id, adminUserId: req.userId, note, ip: req.ip }));
+  })
+);
+
+// After the retention period setting changes, re-date the existing entries.
+router.post(
+  "/regulated-recalculate",
+  requireAdminRole("admin_super"),
+  asyncHandler(async (req, res) => {
+    z.object({ confirm: z.literal(true) }).parse(req.body);
+    res.json(await recalculateEndDates({ adminUserId: req.userId, ip: req.ip }));
   })
 );
 
