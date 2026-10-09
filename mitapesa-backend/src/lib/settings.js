@@ -70,6 +70,8 @@ const DEFAULTS = {
   // cardHelpers.js myCard()) — no backfill migration needed to "turn it
   // on", by design.
   pay_module_enabled: "true",
+  // Whether the Pay tab appears in the app's bottom navigation. Independent of pay_module_enabled so it can be hidden while payments are off.
+  pay_tab_visible: "true",
   // How many days a deleted account's data is kept in the archive (readable
   // and restorable by an admin) before it is permanently erased. The app
   // shows this exact number to the customer when they delete, so it must be
