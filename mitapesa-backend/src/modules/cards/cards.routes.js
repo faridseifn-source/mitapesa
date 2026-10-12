@@ -21,6 +21,7 @@ const { statementToCsv, sendCsv } = require("../../lib/csv");
 const { notifyUser } = require("../../lib/notify");
 const { quoteFee, collectFee } = require("../../lib/feeEngine");
 const { getSetting } = require("../../lib/settings");
+const referrals = require("../../lib/referrals");
 
 const router = Router();
 router.use(requireAuth);
@@ -190,6 +191,7 @@ router.post(
     const body = { card: snapshot, funding };
     await saveIdempotentResponse(req, 200, body);
     await writeAudit(req.userId, "card.topup.gateway", { ip: req.ip, amount, maskedSource: funding.maskedSource });
+    referrals.trackEvent(req.userId, "topup_completed", Date.now()); // event name only — never the amount
     await notifyUser(req.userId, { type: "topup", title: "Wallet topped up", message: `You added ${amount.toLocaleString()} TZS from ${channelLabel}`, url: "/pay" });
     res.json(body);
   })
@@ -218,6 +220,7 @@ router.post(
     const body = { card: snapshot, funding };
     await saveIdempotentResponse(req, 200, body);
     await writeAudit(req.userId, "card.topup.oct", { ip: req.ip, amount, maskedSource: funding.maskedSource });
+    referrals.trackEvent(req.userId, "topup_completed", Date.now()); // event name only — never the amount
     await notifyUser(req.userId, { type: "topup", title: "Wallet topped up", message: `You added ${amount.toLocaleString()} TZS from ${channelLabel}`, url: "/pay" });
     res.json(body);
   })
@@ -274,6 +277,7 @@ router.post(
     const body = { card: snapshot, transaction, payment, reference };
     await saveIdempotentResponse(req, 200, body);
     await writeAudit(req.userId, "card.pay.lipa", { ip: req.ip, amount, destination, merchant: recipient.name, reference });
+    referrals.trackEvent(req.userId, "payment_completed", reference); // event name only — never the amount
     await notifyUser(req.userId, { type: "payment", title: "Payment sent", message: `You paid ${amount.toLocaleString()} TZS to ${recipient.name} — ref ${reference}`, url: "/pay" });
     res.json(body);
   })
@@ -305,6 +309,7 @@ router.post(
     const body = { card: snapshot, transaction, reference, fee: { mitaPesaFee: Number(quote.mitaPesaFee), tax: Number(quote.tax) } };
     await saveIdempotentResponse(req, 200, body);
     await writeAudit(req.userId, "card.pay.gepg", { ip: req.ip, amount, control, biller, reference, mitaPesaFee: Number(quote.mitaPesaFee) });
+    referrals.trackEvent(req.userId, "payment_completed", reference); // event name only — never the amount
     await notifyUser(req.userId, { type: "bill_payment", title: "Bill paid", message: `You paid ${totalDebit.toLocaleString()} TZS to ${biller} — ref ${reference}`, url: "/pay" });
     res.json(body);
   })
@@ -337,6 +342,7 @@ router.post(
     const body = { card: snapshot, transaction, token, reference, fee: { mitaPesaFee: Number(quote.mitaPesaFee), tax: Number(quote.tax) } };
     await saveIdempotentResponse(req, 200, body);
     await writeAudit(req.userId, "card.pay.luku", { ip: req.ip, amount, meter, reference, mitaPesaFee: Number(quote.mitaPesaFee) });
+    referrals.trackEvent(req.userId, "payment_completed", reference); // event name only — never the amount
     // The token itself still reflects the electricity value (`amount`) purchased — the fee is a separate charge, not part of the electricity value.
     await notifyUser(req.userId, { type: "bill_payment", title: "Electricity purchased", message: `You bought ${amount.toLocaleString()} TZS of electricity for meter ${meter} — token ${token}`, url: "/pay" });
     res.json(body);
