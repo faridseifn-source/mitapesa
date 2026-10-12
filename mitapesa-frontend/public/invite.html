@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You're invited to MitaPesa</title>
+<meta name="description" content="Join MitaPesa with an invite code and get free AI credits when you finish your first steps.">
+<style>
+  :root { --bg:#F6F4EE; --card:#fff; --ink:#12201A; --soft:#5C685F; --faint:#8A9189; --line:#E4E0D3; --accent:#1F6F50; --accentSoft:#E4F0E9; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0E1712; --card:#16221B; --ink:#ECEAE1; --soft:#9CAA9F; --faint:#6C776E; --line:#25352A; --accent:#45B383; --accentSoft:#1B3227; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family: Inter, system-ui, -apple-system, sans-serif; }
+  main { max-width: 440px; margin: 0 auto; padding: 36px 20px 48px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 18px 0 8px; }
+  p { color: var(--soft); line-height: 1.5; margin: 0 0 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; margin: 22px 0; }
+  .label { font-size: 11px; letter-spacing:.08em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  .code { font: 700 30px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .14em; margin: 4px 0 14px; }
+  button, a.btn { display:block; width:100%; text-align:center; padding: 14px; border-radius: 999px; font-weight: 600; font-size: 15px; border: 0; cursor: pointer; text-decoration: none; }
+  .primary { background: var(--accent); color:#fff; }
+  .ghost { background: var(--accentSoft); color: var(--accent); margin-top: 10px; }
+  ol { color: var(--soft); padding-left: 20px; line-height: 1.7; }
+  small { color: var(--faint); display:block; text-align:center; margin-top: 18px; }
+  .lang { float:right; background:none; width:auto; padding: 6px 12px; border:1px solid var(--line); color: var(--soft); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <button class="lang" id="lang">Kiswahili</button>
+  <div style="font-weight:800;font-size:20px;color:var(--accent)">MitaPesa</div>
+  <h1 id="title"></h1>
+  <p id="sub"></p>
+
+  <div class="card">
+    <div class="label" id="codeLabel"></div>
+    <div class="code" id="code">—</div>
+    <button class="primary" id="copy"></button>
+    <a class="btn ghost" id="store" href="#"></a>
+  </div>
+
+  <ol id="steps"></ol>
+  <small id="fine"></small>
+</main>
+<script>
+  // Set this to your App Store URL once the app is live.
+  var APP_STORE_URL = "";
+  var API = "https://mitapesa-api.dugapay.com";
+
+  var T = {
+    en: { title: "You're invited to MitaPesa", sub: "Track your money, set budgets and get AI help. Join with this code and you both earn free AI credits.", codeLabel: "Invite code", copy: "Copy code", copied: "Copied ✓", store: "Get the app", soon: "App Store link coming soon",
+      steps: ["Install MitaPesa and tap Create account.", "Paste the code when asked for an invite code.", "Create your first budget, log a few expenses and open the app on 3 different days."],
+      fine: "Rewards have no cash value. Terms apply.", invitedBy: function (n) { return n + " invited you"; } },
+    sw: { title: "Umealikwa kujiunga na MitaPesa", sub: "Fuatilia pesa zako, weka bajeti na upate msaada wa AI. Jiunge kwa msimbo huu na nyote mpate salio la AI bila malipo.", codeLabel: "Msimbo wa mwaliko", copy: "Nakili msimbo", copied: "Imenakiliwa ✓", store: "Pakua programu", soon: "Kiungo cha App Store kinakuja hivi karibuni",
+      steps: ["Sakinisha MitaPesa kisha bofya Fungua akaunti.", "Bandika msimbo unapoombwa msimbo wa mwaliko.", "Tengeneza bajeti yako ya kwanza, rekodi matumizi machache na ufungue programu kwa siku 3 tofauti."],
+      fine: "Zawadi hazina thamani ya fedha taslimu. Masharti yanatumika.", invitedBy: function (n) { return n + " amekualika"; } }
+  };
+  var lang = (navigator.language || "en").toLowerCase().indexOf("sw") === 0 ? "sw" : "en";
+  var ref = (new URLSearchParams(location.search).get("ref") || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  var who = "";
+
+  function render() {
+    var s = T[lang];
+    document.documentElement.lang = lang;
+    document.getElementById("title").textContent = who ? s.invitedBy(who) : s.title;
+    document.getElementById("sub").textContent = s.sub;
+    document.getElementById("codeLabel").textContent = s.codeLabel;
+    document.getElementById("code").textContent = ref || "—";
+    document.getElementById("copy").textContent = s.copy;
+    var store = document.getElementById("store");
+    store.textContent = APP_STORE_URL ? s.store : s.soon;
+    store.href = APP_STORE_URL || "#";
+    document.getElementById("steps").innerHTML = s.steps.map(function (x) { return "<li>" + x + "</li>"; }).join("");
+    document.getElementById("fine").textContent = s.fine;
+    document.getElementById("lang").textContent = lang === "en" ? "Kiswahili" : "English";
+  }
+  document.getElementById("lang").onclick = function () { lang = lang === "en" ? "sw" : "en"; render(); };
+  document.getElementById("copy").onclick = function () {
+    if (!ref) return;
+    var done = function () { var b = document.getElementById("copy"); b.textContent = T[lang].copied; setTimeout(render, 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(ref).then(done, done); else done();
+  };
+  try { if (ref) localStorage.setItem("mitapesa_pending_ref", ref); } catch (e) {}
+  render();
+  if (ref) {
+    fetch(API + "/referrals/resolve/" + encodeURIComponent(ref)).then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.valid) { who = d.referrerFirstName; render(); }
+    }).catch(function () {});
+  }
+</script>
+</body>
+</html>
