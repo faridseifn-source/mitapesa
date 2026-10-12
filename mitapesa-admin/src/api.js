@@ -89,6 +89,28 @@ async function downloadFile(path, filename) {
   URL.revokeObjectURL(url);
 }
 
+// Same as downloadFile but for endpoints that need a POST body (the
+// fulfilment export marks the queue rows it includes).
+async function downloadPost(path, body, filename) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+    body: JSON.stringify(body || {}),
+  });
+  if (!res.ok) {
+    let message = `Export failed (${res.status})`;
+    try { const d = await res.json(); message = d.error || d.message || message; } catch { /* keep generic */ }
+    throw new Error(message);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const adminApi = {
   auth: {
     login: (email, password) => raw("/admin/auth/login", { method: "POST", body: { email, password } }),
@@ -252,5 +274,36 @@ export const adminApi = {
     list: () => raw("/admin/exchange-rates").then((d) => d.rates),
     upsert: (currency, rateToTZS) => raw(`/admin/exchange-rates/${currency}`, { method: "PUT", body: { rateToTZS } }).then((d) => d.rate),
     remove: (currency) => raw(`/admin/exchange-rates/${currency}`, { method: "DELETE" }),
+  },
+  referrals: {
+    dashboard: (campaignId) => raw(`/admin/referrals/dashboard?${qs({ campaignId })}`),
+    campaigns: () => raw("/admin/referrals/campaigns").then((d) => d.campaigns),
+    seedRecommended: () => raw("/admin/referrals/campaigns/seed-recommended", { method: "POST" }),
+    createCampaign: (data) => raw("/admin/referrals/campaigns", { method: "POST", body: data }),
+    updateCampaign: (id, data) => raw(`/admin/referrals/campaigns/${id}`, { method: "PUT", body: data }),
+    setCampaignStatus: (id, status) => raw(`/admin/referrals/campaigns/${id}/status`, { method: "POST", body: { status } }),
+    addMilestone: (campaignId, data) => raw(`/admin/referrals/campaigns/${campaignId}/milestones`, { method: "POST", body: data }),
+    updateMilestone: (id, data) => raw(`/admin/referrals/milestones/${id}`, { method: "PUT", body: data }),
+    rewards: () => raw("/admin/referrals/rewards").then((d) => d.rewards),
+    createReward: (data) => raw("/admin/referrals/rewards", { method: "POST", body: data }),
+    updateReward: (id, data) => raw(`/admin/referrals/rewards/${id}`, { method: "PUT", body: data }),
+    partners: () => raw("/admin/referrals/partners").then((d) => d.partners),
+    createPartner: (data) => raw("/admin/referrals/partners", { method: "POST", body: data }),
+    updatePartner: (id, data) => raw(`/admin/referrals/partners/${id}`, { method: "PUT", body: data }),
+    list: (filters = {}) => raw(`/admin/referrals/referrals?${qs(filters)}`),
+    get: (id) => raw(`/admin/referrals/referrals/${id}`),
+    review: (id, action, note) => raw(`/admin/referrals/referrals/${id}/review`, { method: "POST", body: { action, note } }),
+    entitlements: (status) => raw(`/admin/referrals/entitlements?${qs({ status })}`),
+    ledger: (entitlementId) => raw(`/admin/referrals/ledger?${qs({ entitlementId })}`).then((d) => d.transactions),
+    exportQueue: (body) => downloadPost("/admin/referrals/fulfilment/export", body, "mitapesa-reward-fulfilment.csv"),
+    importResults: (csv) => raw("/admin/referrals/fulfilment/import", { method: "POST", body: { csv } }),
+    fulfil: (id, externalRef) => raw(`/admin/referrals/entitlements/${id}/fulfil`, { method: "POST", body: { externalRef } }),
+    fail: (id, reason) => raw(`/admin/referrals/entitlements/${id}/fail`, { method: "POST", body: { reason } }),
+    requeue: (id) => raw(`/admin/referrals/entitlements/${id}/requeue`, { method: "POST" }),
+    cancel: (id, note) => raw(`/admin/referrals/entitlements/${id}/cancel`, { method: "POST", body: { note } }),
+    appeals: (status) => raw(`/admin/referrals/appeals?${qs({ status })}`).then((d) => d.appeals),
+    resolveAppeal: (id, decision, note) => raw(`/admin/referrals/appeals/${id}/resolve`, { method: "POST", body: { decision, note } }),
+    fraudRules: () => raw("/admin/referrals/fraud-rules"),
+    updateFraudRule: (key, data) => raw(`/admin/referrals/fraud-rules/${key}`, { method: "PUT", body: data }),
   },
 };
