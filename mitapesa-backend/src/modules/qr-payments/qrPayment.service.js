@@ -118,6 +118,7 @@ async function completePaymentFromRecord(payment, merchantName) {
   await prisma.qrPayment.update({ where: { id: payment.id }, data: { status: "completed", stage: "completed", completedAt: new Date(), transactionId: transaction.id } });
   await logEvent(payment.id, "completed", "success", { transactionId: transaction.id });
   await writeAudit(payment.userId, "qrpayment.completed", { paymentId: payment.id, reference: payment.reference, amount: Number(payment.amount), partnerFee: Number(payment.feeAmount || 0), mitaPesaFee: Number(payment.mitaPesaFeeAmount || 0), tax: Number(payment.taxAmount || 0) });
+  require("../../lib/referrals").trackEvent(payment.userId, "payment_completed", payment.reference); // event name only
   if (payment.feeQuoteId) await collectFee(payment.feeQuoteId, payment.reference).catch((err) => console.error("Fee collection failed", err)); // idempotent — a retry (e.g. pending-resolution path) is safe
   const totalExtra = Number(payment.feeAmount || 0) + Number(payment.mitaPesaFeeAmount || 0) + Number(payment.taxAmount || 0);
   const feeNote = totalExtra > 0 ? ` (includes ${totalExtra.toLocaleString()} TZS in fees/taxes)` : "";
