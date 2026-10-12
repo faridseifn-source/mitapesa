@@ -293,6 +293,7 @@ async function deleteOwnAccount({ userId, password, reason, ip }) {
     throw err;
   }
 
+  await require("./referrals").onAccountDeleted(userId); // cancel pending rewards, retire the invite code
   await writeAudit(userId, "account.deleted", { ip, archiveId, reason: reason || null, regulated: !!registerEntry });
 
   // Best-effort and after the fact: the account is already gone, so a mail

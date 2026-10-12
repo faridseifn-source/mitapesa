@@ -1,6 +1,7 @@
 const prisma = require("./prisma");
 const { getSetting, getSettingNumber } = require("./settings");
 const { getPaymentGatewayProvider } = require("../services/paymentGateway");
+const promoCredits = require("./referrals/aiCredits");
 
 // Generalized across every AI feature that needs cost protection (voice
 // logging today, analytics next) — each feature gets its own settings
@@ -86,6 +87,16 @@ async function checkUsageAllowed(userId, feature) {
     }
   }
 
+  // Reward credits (earned through referrals) come next: they expire, so
+  // they are spent before purchased credits, which never do. They sit
+  // below the account-wide ceiling above like everything else. The
+  // "promo:" prefix lets recordUsage() tell the two kinds apart without any
+  // AI route having to change.
+  const promo = await promoCredits.findActivePromoCredit(userId, feature);
+  if (promo) {
+    return { allowed: true, usingCreditId: promoCredits.PROMO_PREFIX + promo.id, packSize, packPriceTzs };
+  }
+
   // Free allowance exhausted (or none configured) — fall back to any
   // unused purchased credits before denying outright. Unlike the free
   // allowance, these never expire at month-end.
@@ -115,7 +126,9 @@ async function recordUsage(userId, feature, estimatedCostUsd, usingCreditId) {
   await prisma.aiUsageLog.create({
     data: { userId, feature, monthKey: currentMonthKey(), estimatedCostUsd },
   });
-  if (usingCreditId) {
+  if (usingCreditId && String(usingCreditId).startsWith(promoCredits.PROMO_PREFIX)) {
+    await promoCredits.consumePromoCredit(String(usingCreditId).slice(promoCredits.PROMO_PREFIX.length));
+  } else if (usingCreditId) {
     await prisma.voiceCreditPurchase.update({
       where: { id: usingCreditId },
       data: { creditsUsed: { increment: 1 } },

@@ -70,6 +70,14 @@ const DEFAULTS = {
   // cardHelpers.js myCard()) — no backfill migration needed to "turn it
   // on", by design.
   pay_module_enabled: "true",
+  // Referral & Rewards. Master switch (campaigns also have their own
+  // status/dates), the public invite page a shared link points at, and the
+  // fraud thresholds: a referral scoring >= hold goes to manual review,
+  // >= reject is refused outright.
+  referral_enabled: "true",
+  referral_landing_url: "https://mitapesa.dugapay.com/invite.html",
+  referral_fraud_hold_score: "50",
+  referral_fraud_reject_score: "100",
   // Whether the Pay tab appears in the app's bottom navigation. Independent of pay_module_enabled so it can be hidden while payments are off.
   pay_tab_visible: "true",
   // How many days a deleted account's data is kept in the archive (readable
