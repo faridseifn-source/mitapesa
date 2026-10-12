@@ -2,6 +2,7 @@ const app = require("./app");
 const env = require("./lib/env");
 const { processBundleRenewals } = require("./lib/bundleLifecycle");
 const { purgeExpiredArchives } = require("./lib/accountArchive");
+const { processMaturity: processReferralRewards } = require("./lib/referrals");
 
 app.listen(env.port, () => {
   console.log(`MitaPesa API listening on :${env.port} [${env.nodeEnv}]`); // eslint-disable-line no-console
@@ -32,3 +33,15 @@ const runArchivePurge = () =>
     .catch((err) => console.error("Archive retention job failed:", err)); // eslint-disable-line no-console
 setInterval(runArchivePurge, ARCHIVE_PURGE_INTERVAL_MS);
 setTimeout(runArchivePurge, 60 * 1000);
+
+// Referral rewards: release matured rewards (after a second fraud check) and
+// expire old AI credits. Hourly is plenty — maturity is measured in days.
+// Same single-instance caveat as the jobs above; every step is guarded by
+// status transitions so an accidental overlap can't double-issue.
+const REFERRAL_JOB_INTERVAL_MS = 60 * 60 * 1000;
+const runReferralJob = () =>
+  processReferralRewards()
+    .then((r) => { if (r.released || r.held || r.cancelled || r.expiredCredits) console.log("Referral rewards:", JSON.stringify(r)); }) // eslint-disable-line no-console
+    .catch((err) => console.error("Referral reward job failed:", err)); // eslint-disable-line no-console
+setInterval(runReferralJob, REFERRAL_JOB_INTERVAL_MS);
+setTimeout(runReferralJob, 90 * 1000);
