@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const rateLimit = require("express-rate-limit");
 const { z } = require("zod");
 const prisma = require("../../lib/prisma");
+const referrals = require("../../lib/referrals");
 const env = require("../../lib/env");
 const { requireAuth } = require("../../middleware/auth");
 const { asyncHandler } = require("../../middleware/errorHandler");
@@ -130,6 +131,7 @@ router.post(
         prisma.user.update({ where: { id: req.userId }, data: { kycStatus: "VERIFIED" } }),
       ]);
       await writeAudit(req.userId, "kyc.otp.verified", { ip: req.ip });
+      referrals.trackEvent(req.userId, "kyc_verified", "kyc");
       await syncNidaProfile(req.userId, kyc.sessionRef);
     } else {
       const attempts = kyc.attempts + 1;
@@ -166,6 +168,7 @@ router.post(
         prisma.user.update({ where: { id: req.userId }, data: { kycStatus: "VERIFIED" } }),
       ]);
       await writeAudit(req.userId, "kyc.kbv.verified", { ip: req.ip, correctCount });
+      referrals.trackEvent(req.userId, "kyc_verified", "kyc");
       await syncNidaProfile(req.userId, kyc.sessionRef);
     } else {
       const attempts = kyc.attempts + 1;
