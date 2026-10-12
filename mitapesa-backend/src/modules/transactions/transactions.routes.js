@@ -9,6 +9,7 @@ const { notifyUser } = require("../../lib/notify");
 const { getSetting } = require("../../lib/settings");
 const { csvRow, sendCsv } = require("../../lib/csv");
 const { convertToTZS } = require("../../lib/currencyConversion");
+const referrals = require("../../lib/referrals");
 
 const router = Router();
 router.use(requireAuth);
@@ -121,6 +122,8 @@ router.post(
       })));
     }
 
+    // Event name + opaque id only — never the amount or merchant.
+    referrals.trackEvent(req.userId, "transaction_logged", transaction.id);
     res.status(201).json({ transaction });
   })
 );
@@ -147,6 +150,7 @@ router.post(
         })
       )
     );
+    for (const t of created.slice(0, 20)) referrals.trackEvent(req.userId, "transaction_logged", t.id);
     res.status(201).json({ transactions: created });
   })
 );
