@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, MessageSquareWarning, Settings, ScrollText, LogOut, ShieldCheck, Megaphone, Landmark, Percent, Package, TrendingUp, UserCog, Scale, DollarSign, Sparkles, GraduationCap, UserX } from "lucide-react";
+import { LayoutDashboard, Users, MessageSquareWarning, Settings, ScrollText, LogOut, ShieldCheck, Megaphone, Landmark, Percent, Package, TrendingUp, UserCog, Scale, DollarSign, Sparkles, GraduationCap, UserX, Gift } from "lucide-react";
 import { ROLE_LABEL } from "./ui.jsx";
 
 const NAV_ITEMS = [
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { key: "reconciliation", label: "Reconciliation", icon: Scale, minRole: "admin_support" },
   { key: "exchangeRates", label: "Exchange rates", icon: DollarSign, minRole: "admin_viewer" },
   { key: "aiUsage", label: "AI usage", icon: Sparkles, minRole: "admin_viewer" },
+  { key: "referrals", label: "Referrals & rewards", icon: Gift, minRole: "admin_viewer" },
   { key: "onboardingTips", label: "Onboarding tips", icon: GraduationCap, minRole: "admin_viewer" },
   { key: "broadcast", label: "Broadcast", icon: Megaphone, minRole: "admin_super" },
   { key: "staff", label: "Admin users", icon: UserCog, minRole: "admin_super" },
