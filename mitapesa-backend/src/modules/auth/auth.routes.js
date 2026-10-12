@@ -12,6 +12,7 @@ const { getSetting } = require("../../lib/settings");
 const { getDisplayCurrencyRate } = require("../../lib/currencyConversion");
 const { hashToken } = require("../../lib/jwt");
 const { setRefreshCookie, clearRefreshCookie, COOKIE_NAME } = require("../../lib/cookies");
+const referrals = require("../../lib/referrals");
 const { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } = require("./auth.schema");
 const authService = require("./auth.service");
 const { getSmsProvider } = require("../../services/sms");
@@ -128,10 +129,13 @@ router.post(
   authLimiter,
   asyncHandler(async (req, res) => {
     const input = registerSchema.parse(req.body);
-    const user = await authService.registerUser({ ...input, ip: req.ip });
+    const { referralCode, deviceId, ...registration } = input;
+    const user = await authService.registerUser({ ...registration, ip: req.ip });
+    // Best-effort and never throws: a bad code just means no referral.
+    const referral = await referrals.attributeSignup({ referredUser: user, code: referralCode, deviceId, ip: req.ip });
     const { accessToken, refreshToken } = await authService.issueTokenPair(user);
     setRefreshCookie(res, refreshToken);
-    res.status(201).json({ user: publicUser(user), accessToken });
+    res.status(201).json({ user: publicUser(user), accessToken, referral: { applied: Boolean(referral.attributed && referral.status !== "rejected"), reason: referral.reason || null } });
   })
 );
 
@@ -141,6 +145,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
     const user = await authService.authenticate(email, password, req.ip);
+    referrals.trackEvent(user.id, "daily_active", new Date().toISOString().slice(0, 10));
     const { accessToken, refreshToken } = await authService.issueTokenPair(user);
     setRefreshCookie(res, refreshToken);
     res.json({ user: publicUser(user), accessToken });
@@ -195,6 +200,8 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
+    // One "active day" per calendar day (idempotent by date). Fire-and-forget.
+    referrals.trackEvent(req.userId, "daily_active", new Date().toISOString().slice(0, 10));
     let currencyRate = 1;
     try {
       currencyRate = await getDisplayCurrencyRate(user.preferredCurrency);

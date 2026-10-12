@@ -13,6 +13,9 @@ const registerSchema = z.object({
   // real, server-enforced gate; the frontend's disabled button is just UX.
   agreedToTerms: z.literal(true, { errorMap: () => ({ message: "You must agree to the Terms and Conditions and Privacy Policy to create an account." }) }),
   termsVersion: z.string().min(1),
+  // Optional referral attribution; a bad value never blocks signup.
+  referralCode: z.string().max(40).optional(),
+  deviceId: z.string().max(120).optional(),
 }).refine((data) => data.phoneVerifyToken || data.emailVerifyToken, {
   message: "Either phoneVerifyToken or emailVerifyToken is required",
 });
