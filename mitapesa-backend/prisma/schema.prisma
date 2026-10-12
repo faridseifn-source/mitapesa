@@ -1293,3 +1293,301 @@ model RegulatedRetention {
   @@index([retainUntil])
 }
 
+
+// ════════════════════════════════════════════════════════════════════════
+// Referral & Rewards (Phase 1)
+//
+// Deliberately NO Prisma relations to User/Wallet/Transaction etc.: every
+// userId here is a plain string, the same convention as RegulatedRetention.
+// That keeps the module removable/tweakable without touching core tables,
+// and means a deleted account never cascades into the reward ledger.
+// Money-like truth lives in RewardTransaction (append-only). Nothing in
+// this module ever reads or exposes a referred customer's financial data:
+// the only signals consumed are anonymous event NAMES (budget_created,
+// transaction_logged, daily_active) — never amounts, merchants or balances.
+// ════════════════════════════════════════════════════════════════════════
+
+model ReferralCampaign {
+  id                  String    @id @default(cuid())
+  slug                String    @unique
+  nameEn              String
+  nameSw              String
+  descriptionEn       String    @default("")
+  descriptionSw       String    @default("")
+  termsEn             String    @default("")
+  termsSw             String    @default("")
+  status              String    @default("draft") // draft | active | paused | ended
+  startsAt            DateTime?
+  endsAt              DateTime?
+  // Caps. null/0 = unlimited.
+  maxReferralsPerReferrer Int   @default(0)
+  maxRewardsPerReferrer   Int   @default(0)
+  maxRewardsTotal         Int   @default(0)
+  budgetTzs               Decimal? @db.Decimal(14, 2) // ceiling on total reward COST
+  // Days an attributed signup stays valid for qualification.
+  qualifyWithinDays   Int       @default(30)
+  createdByUserId     String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([status])
+}
+
+// One step a referred customer must complete. A milestone may carry a
+// reward for the referrer, for the referred customer, or both.
+model ReferralMilestone {
+  id               String   @id @default(cuid())
+  campaignId       String
+  sequence         Int      @default(1)
+  eventName        String   // budget_created | transaction_logged | daily_active | signed_up | ...
+  threshold        Int      @default(1) // how many distinct events are needed
+  titleEn          String
+  titleSw          String
+  required         Boolean  @default(true) // all required milestones => referral "qualified"
+  referrerRewardId String?
+  referredRewardId String?
+  maturityDays     Int      @default(0) // referrer reward is held this long before it becomes available
+  active           Boolean  @default(true)
+
+  @@index([campaignId, sequence])
+}
+
+model ReferralCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  code      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model ReferralClick {
+  id         String   @id @default(cuid())
+  code       String
+  ipHash     String?
+  deviceHash String?
+  createdAt  DateTime @default(now())
+
+  @@index([code, createdAt])
+}
+
+// Devices/IPs seen per user — only used by the fraud engine to spot a person
+// referring themselves. Hashed; never shown to anyone.
+model ReferralDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  deviceHash String
+  ipHash     String?
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, deviceHash])
+  @@index([deviceHash])
+}
+
+model Referral {
+  id             String    @id @default(cuid())
+  campaignId     String
+  referrerUserId String
+  referredUserId String    @unique // a customer can only ever be referred once
+  code           String
+  // pending | qualified | rejected | under_review | cancelled
+  status         String    @default("pending")
+  deviceHash     String?
+  ipHash         String?
+  riskScore      Int       @default(0)
+  riskLevel      String    @default("low") // low | medium | high
+  reviewNote     String?
+  reviewedByUserId String?
+  reviewedAt     DateTime?
+  qualifiedAt    DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([referrerUserId, createdAt])
+  @@index([campaignId, status])
+  @@index([status, riskLevel])
+  @@index([ipHash, createdAt])
+  @@index([deviceHash])
+}
+
+model ReferralMilestoneProgress {
+  id           String    @id @default(cuid())
+  referralId   String
+  milestoneId  String
+  progress     Int       @default(0)
+  achievedAt   DateTime?
+
+  @@unique([referralId, milestoneId])
+}
+
+// Idempotent product events. Unique on (userId, eventName, eventRef) so the
+// same transaction/day/budget can never be counted twice, however many times
+// a hook fires.
+model ReferralEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  eventName String
+  eventRef  String   // e.g. transaction id, "2026-10-12", budget id
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventName, eventRef])
+  @@index([userId, eventName])
+}
+
+model Partner {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   @default("other") // telco | merchant | bank | other
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  integration  String   @default("manual") // manual | api (future)
+  notes        String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model RewardDefinition {
+  id            String   @id @default(cuid())
+  type          String   // ai_credits | airtime | data_bundle | voucher | discount | cash_bonus | other
+  nameEn        String
+  nameSw        String
+  descriptionEn String   @default("")
+  descriptionSw String   @default("")
+  // auto  = fulfilled by the system the moment it is available (AI credits)
+  // manual = lands in the fulfilment queue for staff / partner
+  fulfilment    String   @default("manual")
+  aiFeature     String?  // all | voice | analytics   (ai_credits only)
+  aiCredits     Int      @default(0)
+  aiValidDays   Int      @default(90)
+  valueTzs      Decimal  @default(0) @db.Decimal(14, 2) // face value to the customer
+  costTzs       Decimal  @default(0) @db.Decimal(14, 2) // what it costs us
+  partnerId     String?
+  validityDays  Int      @default(30) // how long a fulfilled voucher etc. stays valid
+  // fee_waiver only: how many days of fee-free transactions, and for which
+  // fee transaction type (null = every type). Implemented as a FeeExemption,
+  // so the existing fee engine honours it with no change.
+  waiverDays    Int      @default(0)
+  waiverTransactionTypeId String?
+  stockLimit    Int      @default(0)  // 0 = unlimited
+  issuedCount   Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model RewardEntitlement {
+  id                 String    @id @default(cuid())
+  idempotencyKey     String    @unique
+  userId             String
+  recipient          String    // referrer | referred
+  campaignId         String
+  referralId         String
+  milestoneId        String
+  rewardDefinitionId String
+  // pending_maturity | available | queued | fulfilled | failed | cancelled | expired | under_review | capped
+  status             String    @default("pending_maturity")
+  valueTzs           Decimal   @default(0) @db.Decimal(14, 2)
+  costTzs            Decimal   @default(0) @db.Decimal(14, 2)
+  maturesAt          DateTime?
+  fulfilmentBatchId  String?
+  exemptionId        String?   // fee_waiver: the FeeExemption this reward created
+  externalRef        String?   // voucher code / airtime txn ref from the partner
+  failureReason      String?
+  fulfilledAt        DateTime?
+  expiresAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, maturesAt])
+  @@index([referralId])
+  @@index([fulfilmentBatchId])
+}
+
+// APPEND-ONLY. Rows here are never updated or deleted by any code path.
+model RewardTransaction {
+  id            String   @id @default(cuid())
+  entitlementId String
+  userId        String
+  type          String   // created | matured | queued | fulfilled | failed | cancelled | expired | held | released | ai_credit_granted
+  actor         String   @default("system") // system | admin:<userId> | import
+  note          String?
+  amountTzs     Decimal? @db.Decimal(14, 2)
+  createdAt     DateTime @default(now())
+
+  @@index([entitlementId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model AiRewardCredit {
+  id             String   @id @default(cuid())
+  userId         String
+  entitlementId  String   @unique
+  feature        String   @default("all") // all | voice | analytics
+  creditsGranted Int
+  creditsUsed    Int      @default(0)
+  expiresAt      DateTime?
+  status         String   @default("active") // active | exhausted | expired | cancelled
+  createdAt      DateTime @default(now())
+
+  @@index([userId, status])
+}
+
+// APPEND-ONLY audit of every credit movement.
+model AiCreditTransaction {
+  id        String   @id @default(cuid())
+  creditId  String
+  userId    String
+  feature   String
+  delta     Int      // +grant, -consumption, -expiry/cancel
+  reason    String   // granted | consumed | expired | cancelled
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model FulfilmentBatch {
+  id          String    @id @default(cuid())
+  rewardType  String?
+  partnerId   String?
+  status      String    @default("exported") // exported | partially_imported | completed
+  itemCount   Int       @default(0)
+  createdByUserId String?
+  createdAt   DateTime  @default(now())
+  importedAt  DateTime?
+}
+
+model FraudRule {
+  key       String   @id
+  enabled   Boolean  @default(true)
+  weight    Int      @default(20)
+  params    Json?
+  updatedAt DateTime @updatedAt
+}
+
+model RiskEvaluation {
+  id         String   @id @default(cuid())
+  referralId String
+  stage      String   // signup | maturity
+  score      Int
+  level      String
+  reasons    Json
+  createdAt  DateTime @default(now())
+
+  @@index([referralId, createdAt])
+}
+
+model ReferralAppeal {
+  id          String    @id @default(cuid())
+  referralId  String
+  userId      String
+  message     String
+  status      String    @default("open") // open | upheld | dismissed
+  resolutionNote String?
+  resolvedByUserId String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@index([referralId])
+}
