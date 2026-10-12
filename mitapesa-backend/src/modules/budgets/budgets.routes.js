@@ -4,6 +4,7 @@ const prisma = require("../../lib/prisma");
 const { requireAuth } = require("../../middleware/auth");
 const { asyncHandler } = require("../../middleware/errorHandler");
 const { notFound, forbidden } = require("../../lib/errors");
+const referrals = require("../../lib/referrals");
 
 const router = Router();
 router.use(requireAuth);
@@ -48,6 +49,8 @@ router.put(
         ? [prisma.budgetLimitHistory.create({ data: { userId: req.userId, categoryId, limit, period } })]
         : []),
     ]);
+    // Event name + opaque id only — never the limit amount or category.
+    referrals.trackEvent(req.userId, "budget_created", budget.id);
     res.json({ budget });
   })
 );
