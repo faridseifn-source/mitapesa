@@ -100,7 +100,7 @@ router.post(
     const { question } = askRequestSchema.parse(req.body);
     let totalCostUsd = 0;
 
-    const categories = await prisma.category.findMany({ where: { OR: [{ userId: null }, { userId: req.userId }] }, select: { name: true } });
+    const categories = await prisma.category.findMany({ where: { scope: "everyday", OR: [{ userId: null }, { userId: req.userId }] }, select: { name: true } });
     const categoryNames = categories.map((c) => c.name);
     const today = new Date().toISOString().slice(0, 10);
 
