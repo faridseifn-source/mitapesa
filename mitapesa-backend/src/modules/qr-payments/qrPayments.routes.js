@@ -16,7 +16,6 @@ function serializeSuggestedBundle(b) {
   return { id: b.id, nameEn: b.nameEn, nameSw: b.nameSw, price: Number(b.price), validity: b.validity };
 }
 const { computeCrc16, buildAliasMerchantId } = require("../../lib/tanqr");
-const { suggestCategoryForMcc } = require("../../lib/mccCategoryMap");
 const { getSetting } = require("../../lib/settings");
 
 const router = Router();
@@ -77,12 +76,6 @@ router.post(
       amountFixed: parsed.amountFixed,
       currency: "TZS",
       fee,
-      // A category NAME (not ID) suggested from the merchant's own MCC —
-      // see lib/mccCategoryMap.js for why a name, not an ID, is what's
-      // returned. null if the QR carried no MCC, or the MCC is outside
-      // every range that mapping recognizes; the client's own default
-      // category-selection behavior is unchanged in that case.
-      suggestedCategoryName: suggestCategoryForMcc(merchant.mcc),
     });
   })
 );
@@ -114,7 +107,6 @@ router.post(
       amountFixed: false,
       currency: "TZS",
       fee,
-      suggestedCategoryName: suggestCategoryForMcc(merchant.mcc),
     });
   })
 );
@@ -129,7 +121,7 @@ router.post(
     const existing = await checkIdempotencyKey(req);
     if (existing) return res.status(existing.statusCode).json(existing.responseBody);
 
-    const { payload, aliasMerchantId, cardType, cardId, amount, categoryId, authMethod } = z
+    const { payload, aliasMerchantId, cardType, cardId, amount, categoryId, authMethod, projectId } = z
       .object({
         payload: z.string().min(10).optional(),
         aliasMerchantId: z.string().length(8).optional(),
@@ -137,12 +129,13 @@ router.post(
         cardId: z.string().min(1),
         amount: z.number().positive().optional(), // required only when the QR/alias doesn't fix one
         categoryId: z.string().min(1),
+        projectId: z.string().min(1).nullable().optional(),
         authMethod: z.enum(["pin", "biometric", "otp", "none"]),
       })
       .refine((v) => !!v.payload !== !!v.aliasMerchantId, { message: "Provide exactly one of payload or aliasMerchantId" })
       .parse(req.body);
 
-    const { payment } = await payViaQr({ userId: req.userId, rawPayload: payload, aliasMerchantId, cardType, cardId, amountOverride: amount, categoryId, authMethod });
+    const { payment } = await payViaQr({ userId: req.userId, rawPayload: payload, aliasMerchantId, cardType, cardId, amountOverride: amount, categoryId, authMethod, projectId });
 
     const body = { payment: serializePayment(payment) };
     await saveIdempotentResponse(req, 200, body);

@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const prisma = require("../../lib/prisma");
+const { assertProjectForTransaction } = require("../../lib/projects");
 const { parseTanqrPayload, buildAliasMerchantId, parseAliasMerchantId } = require("../../lib/tanqr");
 const { getSetting } = require("../../lib/settings");
 const { getCbsProvider } = require("../../services/cbs");
@@ -112,7 +113,7 @@ async function completePaymentFromRecord(payment, merchantName) {
   const transaction = await prisma.transaction.create({
     data: {
       walletId, categoryId: payment.categoryId, amount: -Math.abs(totalDebit), merchant: merchantName, date: new Date(),
-      loggedByUserId: payment.userId, loggedByName: requester.firstName, source: "qr_payment", reference: payment.reference, status: "completed",
+      loggedByUserId: payment.userId, loggedByName: requester.firstName, source: "qr_payment", reference: payment.reference, status: "completed", projectId: payment.projectId || null,
     },
   });
   await prisma.qrPayment.update({ where: { id: payment.id }, data: { status: "completed", stage: "completed", completedAt: new Date(), transactionId: transaction.id } });
@@ -138,7 +139,7 @@ async function completePaymentFromRecord(payment, merchantName) {
  * is only ever left debited if CBS/TIPS ultimately confirm success;
  * anything else triggers an automatic reversal before returning.
  */
-async function payViaQr({ userId, rawPayload, aliasMerchantId, cardType, cardId, amountOverride, categoryId, authMethod }) {
+async function payViaQr({ userId, rawPayload, aliasMerchantId, cardType, cardId, amountOverride, categoryId, authMethod, projectId }) {
   const { merchant, isOnUs, parsed } = rawPayload
     ? await resolveQrPayload(rawPayload)
     : await resolveByAlias(aliasMerchantId);
@@ -149,6 +150,8 @@ async function payViaQr({ userId, rawPayload, aliasMerchantId, cardType, cardId,
   const pointOfInitiationMethod = parsed?.pointOfInitiationMethod || "manual_alias";
   if (!amount || amount <= 0) throw badRequest("Enter a valid amount to pay");
   if (!categoryId) throw badRequest("Select a category for this payment");
+  // Validate the project before any money moves; the wallet is the one the ledger row will land in.
+  if (projectId) await assertProjectForTransaction(userId, projectId, await resolveWalletId({ cardType, cardId, userId }));
 
   await requireKycIfOverThreshold(userId, amount);
 
@@ -190,7 +193,7 @@ async function payViaQr({ userId, rawPayload, aliasMerchantId, cardType, cardId,
   const payment = await prisma.qrPayment.create({
     data: {
       userId, reference, merchantId: merchant.id, pointOfInitiationMethod,
-      rawPayload: storedPayload, currency: "TZS", amount, feeAmount: partnerFee, mitaPesaFeeAmount, taxAmount, feeQuoteId: quote.id, isOnUs, categoryId,
+      rawPayload: storedPayload, currency: "TZS", amount, feeAmount: partnerFee, mitaPesaFeeAmount, taxAmount, feeQuoteId: quote.id, isOnUs, categoryId, projectId: projectId || null,
       cardId: cardType === "main" ? card.id : null, virtualCardId: cardType === "virtual" ? card.id : null,
       authMethod, status: "processing", stage: "initiated",
     },
