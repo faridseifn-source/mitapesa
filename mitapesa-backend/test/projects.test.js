@@ -127,3 +127,62 @@ describe("summarizeProject", () => {
     assert.equal(s.spent, 0); assert.equal(s.avgWeeklySpend, 0); assert.equal(s.weeksToBudget, null);
   });
 });
+
+describe("project-only categories", () => {
+  test("strict: project category without a project is rejected, with a project is allowed, everyday is always allowed", async () => {
+    fake = createFakePrisma();
+    const mat = await fake.category.create({ data: { name: "Materials", userId: null, scope: "project" } });
+    const food = await fake.category.create({ data: { name: "Food", userId: null, scope: "everyday" } });
+    await assert.rejects(() => P.checkCategoryForProject(mat.id, null, { strict: true }), /only for project/);
+    assert.equal((await P.checkCategoryForProject(mat.id, "p1", { strict: true })).changed, false);
+    assert.equal((await P.checkCategoryForProject(food.id, null, { strict: true })).changed, false);
+  });
+  test("moved out of a project with a project category falls back to Other", async () => {
+    fake = createFakePrisma();
+    const mat = await fake.category.create({ data: { name: "Materials", userId: null, scope: "project" } });
+    const other = await fake.category.create({ data: { name: "Other", userId: null, scope: "everyday" } });
+    const r = await P.checkCategoryForProject(mat.id, null, { strict: false });
+    assert.deepEqual([r.categoryId, r.changed], [other.id, true]);
+  });
+  test("ensureProjectCategories creates the set once and is idempotent", async () => {
+    fake = createFakePrisma(); P._resetEnsureFlag();
+    await P.ensureProjectCategories(); P._resetEnsureFlag(); await P.ensureProjectCategories();
+    const all = await fake.category.findMany({ where: { scope: "project" } });
+    assert.equal(all.length, P.PROJECT_CATEGORIES.length);
+  });
+});
+
+describe("project templates and categories", () => {
+  const T = require("../src/lib/projectTemplates");
+  test("every template category is created as a project-scope category; names never clash with everyday ones", () => {
+    const everyday = ["Food & Dining", "Transportation", "Housing & Utilities", "Shopping", "Health & Medical", "Education", "Entertainment", "Bills & Subscriptions", "Family", "Personal Care", "Financial", "Travel", "Other", "Income"];
+    for (const t of T.TEMPLATES) for (const c of t.categories) { assert.ok(T.ALL_CATEGORY_NAMES.includes(c)); assert.ok(!everyday.includes(c), c); }
+    assert.ok(T.TEMPLATES.find((t) => t.key === "custom").categories.length === 0);
+    assert.equal(new Set(T.ALL_CATEGORY_NAMES).size, T.ALL_CATEGORY_NAMES.length);
+  });
+  test("every template ends with Contingency except custom", () => {
+    for (const t of T.TEMPLATES.filter((x) => x.key !== "custom")) assert.equal(t.categories.at(-1), "Contingency", t.key);
+  });
+  test("resolveProjectCategoryIds reuses global, creates a user's own custom one, dedupes and cleans", async () => {
+    fake = createFakePrisma(); P._resetEnsureFlag();
+    const ids = await P.resolveProjectCategoryIds("u1", ["Materials", "  Labour ", "materials", "Roofing sheets", "x"]);
+    assert.equal(ids.length, 3); // Materials, Labour, Roofing sheets ("materials" dup, "x" too short)
+    const custom = await fake.category.findFirst({ where: { name: "Roofing sheets" } });
+    assert.equal(custom.userId, "u1"); assert.equal(custom.scope, "project");
+    const again = await P.resolveProjectCategoryIds("u1", ["Roofing sheets"]);
+    assert.equal(again[0], custom.id);
+  });
+  test("a custom name that clashes with the user's own everyday category gets a (project) suffix", async () => {
+    fake = createFakePrisma(); P._resetEnsureFlag();
+    const orig = fake.category.create.bind(fake.category);
+    await orig({ data: { name: "Gifts", userId: "u2", scope: "everyday", color: "#000" } });
+    // emulate the DB unique (userId,name) rule for this test
+    fake.category.create = async (args) => {
+      if (args.data.userId === "u2" && args.data.name === "Gifts") { const e = new Error("dup"); e.code = "P2002"; throw e; }
+      return orig(args);
+    };
+    const [id] = await P.resolveProjectCategoryIds("u2", ["Gifts"]);
+    const c = await fake.category.findUnique({ where: { id } });
+    assert.equal(c.name, "Gifts (project)");
+  });
+});
