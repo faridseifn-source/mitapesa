@@ -13,6 +13,11 @@ const registerSchema = z.object({
   // real, server-enforced gate; the frontend's disabled button is just UX.
   agreedToTerms: z.literal(true, { errorMap: () => ({ message: "You must agree to the Terms and Conditions and Privacy Policy to create an account." }) }),
   termsVersion: z.string().min(1),
+  // "I am 18 or older" — sent by build 13 onwards. Deliberately optional on the
+  // server so older app builds can still register; the app itself will not let
+  // a customer continue without ticking it. Once the old builds are retired,
+  // change this to z.literal(true) to enforce it here too.
+  adultConfirmed: z.boolean().optional(),
   // Optional referral attribution; a bad value never blocks signup.
   referralCode: z.string().max(40).optional(),
   deviceId: z.string().max(120).optional(),

@@ -10,7 +10,7 @@ const { writeAudit } = require("../../lib/audit");
 const { isAdminRole } = require("../../lib/adminRoles");
 const { getSetting } = require("../../lib/settings");
 
-async function registerUser({ firstName, lastName, email, phone, password, phoneVerifyToken, emailVerifyToken, termsVersion, ip }) {
+async function registerUser({ firstName, lastName, email, phone, password, phoneVerifyToken, emailVerifyToken, termsVersion, adultConfirmed, ip }) {
   const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
   if (existing) throw conflict("An account with this email or phone already exists");
 
@@ -46,6 +46,8 @@ async function registerUser({ firstName, lastName, email, phone, password, phone
         termsAcceptedAt: new Date(),
         termsVersion,
         termsAcceptedIp: ip || null,
+        // Same reasoning: server-generated time, recorded only when the app sent the confirmation.
+        adultConfirmedAt: adultConfirmed === true ? new Date() : null,
       },
     });
 
