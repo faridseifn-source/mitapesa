@@ -3,6 +3,7 @@ const env = require("./lib/env");
 const { processBundleRenewals } = require("./lib/bundleLifecycle");
 const { purgeExpiredArchives } = require("./lib/accountArchive");
 const { processMaturity: processReferralRewards } = require("./lib/referrals");
+const { processReminders } = require("./lib/reminders");
 
 app.listen(env.port, () => {
   console.log(`MitaPesa API listening on :${env.port} [${env.nodeEnv}]`); // eslint-disable-line no-console
@@ -45,3 +46,16 @@ const runReferralJob = () =>
     .catch((err) => console.error("Referral reward job failed:", err)); // eslint-disable-line no-console
 setInterval(runReferralJob, REFERRAL_JOB_INTERVAL_MS);
 setTimeout(runReferralJob, 90 * 1000);
+
+// Daily expense reminder: every 15 minutes, send the reminder to customers whose
+// chosen time has arrived and who have not logged an expense today (see
+// lib/reminders.js). At most one a day per customer, so an overlap or a
+// restart cannot double-send. Same single-instance caveat as above — and the
+// service must stay awake, since a sleeping instance sends nothing.
+const REMINDER_JOB_INTERVAL_MS = 15 * 60 * 1000;
+const runReminderJob = () =>
+  processReminders()
+    .then((r) => { if (r.sent) console.log("Reminders:", JSON.stringify(r)); }) // eslint-disable-line no-console
+    .catch((err) => console.error("Reminder job failed:", err)); // eslint-disable-line no-console
+setInterval(runReminderJob, REMINDER_JOB_INTERVAL_MS);
+setTimeout(runReminderJob, 2 * 60 * 1000);
