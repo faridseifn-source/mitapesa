@@ -7,6 +7,8 @@ const { publicUser } = require("../../lib/serialize");
 const { writeAudit } = require("../../lib/audit");
 const { changePasswordSchema } = require("../auth/auth.schema");
 const authService = require("../auth/auth.service");
+const reminders = require("../../lib/reminders");
+const { sendPushToUser } = require("../../lib/push");
 
 const router = Router();
 router.use(requireAuth);
@@ -45,6 +47,47 @@ router.patch(
     }
 
     res.json({ user: publicUser(user) });
+  })
+);
+
+// ---- Daily expense reminder -------------------------------------------
+const reminderSchema = z.object({
+  enabled: z.boolean().optional(),
+  time: z.string().regex(reminders.TIME_RE, "Use HH:MM, e.g. 20:00").optional(),
+  days: z.array(z.number().int().min(0).max(6)).max(7).optional(), // 0 = Sunday … 6 = Saturday; empty = every day
+});
+
+router.get(
+  "/me/reminder",
+  asyncHandler(async (req, res) => {
+    res.json({ reminder: await reminders.getReminder(req.userId) });
+  })
+);
+
+router.put(
+  "/me/reminder",
+  asyncHandler(async (req, res) => {
+    const patch = reminderSchema.parse(req.body);
+    const reminder = await reminders.saveReminder(req.userId, patch);
+    await writeAudit(req.userId, "user.reminder_updated", { ip: req.ip, enabled: reminder.enabled, time: reminder.time });
+    res.json({ reminder });
+  })
+);
+
+// Lets the customer (and you, when testing a new phone) confirm that
+// notifications actually reach this device. One per 30 seconds per customer.
+const lastTestAt = new Map();
+router.post(
+  "/me/reminder/test",
+  asyncHandler(async (req, res) => {
+    const now = Date.now();
+    if (now - (lastTestAt.get(req.userId) || 0) < 30000) return res.status(429).json({ error: "Please wait a few seconds before sending another test." });
+    lastTestAt.set(req.userId, now);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
+    const { title, body } = reminders.reminderText(user, 0);
+    const { hasPushDevice } = await reminders.getReminder(req.userId);
+    if (hasPushDevice) await sendPushToUser(req.userId, { title, body, url: "/" });
+    res.json({ sent: hasPushDevice, hasPushDevice });
   })
 );
 
