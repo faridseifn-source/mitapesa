@@ -165,6 +165,15 @@ const DEFAULTS = {
   analytics_credit_pack_size: "20",
   analytics_credit_pack_price_tzs: "3000",
   analytics_credit_purchase_simulated_failure_rate: "0",
+
+  // Daily "log today's expenses" reminder — see lib/reminders.js. Customers
+  // pick their own time/days in the app; these are the system-wide switches
+  // and defaults so the behaviour can be tuned without a code change.
+  reminder_enabled: "true", // master switch for the daily reminder
+  reminder_default_time: "20:00", // used until a customer chooses their own time (HH:MM)
+  reminder_max_ignored: "7", // stop reminding after this many in a row with no expense logged afterwards
+  reminder_catchup_hours: "3", // how long after the chosen time a missed reminder may still be sent (e.g. service was restarting)
+  reminder_utc_offset_minutes: "180", // Tanzania is UTC+3 all year (no daylight saving)
 };
 
 async function getSetting(key) {
