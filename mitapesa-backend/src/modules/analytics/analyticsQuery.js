@@ -32,7 +32,8 @@ function weekKey(date) {
 }
 
 function expenseWhere({ walletIds, from, to, categoryFilter }) {
-  const where = { walletId: { in: walletIds }, date: { gte: new Date(from), lte: endOfDay(to) }, amount: { lt: 0 } };
+  // projectId null: project spending (house build etc.) is tracked on its own page, not in everyday spending.
+  const where = { walletId: { in: walletIds }, date: { gte: new Date(from), lte: endOfDay(to) }, amount: { lt: 0 }, projectId: null };
   if (categoryFilter) where.category = { name: categoryFilter };
   return where;
 }
@@ -149,4 +150,4 @@ async function runAnalyticsQuery(userId, querySpec) {
   }
 }
 
-module.exports = { runAnalyticsQuery };
+module.exports = { runAnalyticsQuery, expenseWhere };
