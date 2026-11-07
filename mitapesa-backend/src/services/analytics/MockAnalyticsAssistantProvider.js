@@ -9,6 +9,11 @@ const { AnalyticsAssistantProvider } = require("./AnalyticsAssistantProvider");
  */
 class MockAnalyticsAssistantProvider extends AnalyticsAssistantProvider {
   // eslint-disable-next-line no-unused-vars
+  async suggestProjectCategories({ description, language }) {
+    return { title: null, categories: [], estimatedCostUsd: 0, unavailable: true };
+  }
+
+  // eslint-disable-next-line no-unused-vars
   async interpretQuestion({ question, today, categoryNames }) {
     return {
       querySpec: { intent: "unsupported", clarification: "AI analytics is not configured on this server (mock provider active)." },

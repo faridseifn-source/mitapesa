@@ -29,6 +29,27 @@ class OpenAiAnalyticsAssistantProvider extends AnalyticsAssistantProvider {
     this.apiKey = apiKey;
   }
 
+  async suggestProjectCategories({ description, language }) {
+    const prompt = [
+      "You help a customer of a Tanzanian personal finance app set up a spending project (for example building a house, a wedding, school fees, starting a business, a funeral, a farm). From their short description, suggest a practical starting set of spending categories to track that project's costs, the way a sensible person in Tanzania would budget it.",
+      "Rules: 5 to 9 categories; each 1 to 4 words, in English, Title Case, no numbers, no amounts, no currency; always include \"Contingency\" as the last one; do not repeat; never include personal names, phone numbers or anything the customer did not describe.",
+      `Also give a short friendly project title (max 5 words) in ${language === "sw" ? "Swahili" : "English"}.`,
+      'Respond with ONLY a JSON object: {"title": string, "categories": [string, ...]}.',
+      "If the description is not about a spending project, respond with {\"title\": null, \"categories\": []}.",
+    ].join("\n");
+    const data = await this._chatJson(prompt, `Project description: "${String(description).slice(0, 300)}"`, 300);
+    const raw = Array.isArray(data.parsed?.categories) ? data.parsed.categories : [];
+    const categories = [];
+    for (const c of raw) {
+      if (typeof c !== "string") continue;
+      const n = c.trim().replace(/\s+/g, " ").slice(0, 40);
+      if (n.length >= 2 && /^[\p{L}0-9 &'/-]+$/u.test(n) && !categories.some((x) => x.toLowerCase() === n.toLowerCase())) categories.push(n);
+      if (categories.length >= 10) break;
+    }
+    const title = typeof data.parsed?.title === "string" ? data.parsed.title.trim().slice(0, 60) || null : null;
+    return { title, categories, estimatedCostUsd: data.estimatedCostUsd };
+  }
+
   async interpretQuestion({ question, today, categoryNames }) {
     const categoryList = categoryNames.length ? categoryNames.join(", ") : "Other";
     const prompt = [

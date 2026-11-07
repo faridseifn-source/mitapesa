@@ -14,6 +14,16 @@
  */
 class AnalyticsAssistantProvider {
   /**
+   * Suggests a starting set of spending categories for a customer's own project (house build, wedding, …) from a short
+   * description. Returns names only: no amounts, no personal data in or out.
+   * @returns {Promise<{title: string|null, categories: string[], estimatedCostUsd: number, unavailable?: boolean}>}
+   */
+  // eslint-disable-next-line no-unused-vars
+  async suggestProjectCategories({ description, language }) {
+    throw new Error("Not implemented");
+  }
+
+  /**
    * @param {object} params
    * @param {string} params.question - the customer's own words
    * @param {string} params.today - YYYY-MM-DD, so relative periods
