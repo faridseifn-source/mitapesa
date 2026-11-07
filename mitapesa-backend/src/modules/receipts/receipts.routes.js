@@ -41,7 +41,7 @@ router.post(
       mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
     }).parse(req.body);
 
-    const categories = await prisma.category.findMany({ where: { OR: [{ userId: null }, { userId: req.userId }] }, select: { name: true } });
+    const categories = await prisma.category.findMany({ where: { scope: "everyday", OR: [{ userId: null }, { userId: req.userId }] }, select: { name: true } });
     const categoryNames = categories.map((c) => c.name);
 
     let result;
