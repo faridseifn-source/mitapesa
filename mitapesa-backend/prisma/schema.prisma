@@ -155,6 +155,9 @@ model Category {
   userId String?
   name   String
   color  String
+  // "everyday" (default) or "project": project categories (Materials, Labour…) are only offered on, and only
+  // accepted for, transactions that belong to a project, so everyday pickers, budgets and insights stay clean.
+  scope  String  @default("everyday")
 
   subcategories Subcategory[]
   budgets       Budget[]
@@ -263,6 +266,8 @@ model Project {
   targetDate DateTime?
   status     String    @default("active") // active | done | archived
   note       String?
+  type       String? // template key the project was started from (home_build, wedding… or custom)
+  categoryIds String[] @default([]) // this project's own category set (project-scope categories); empty = offer all generic project categories
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
