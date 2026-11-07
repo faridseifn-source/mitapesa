@@ -22,6 +22,7 @@ const { notifyUser } = require("../../lib/notify");
 const { quoteFee, collectFee } = require("../../lib/feeEngine");
 const { getSetting } = require("../../lib/settings");
 const referrals = require("../../lib/referrals");
+const { assertProjectForTransaction } = require("../../lib/projects");
 
 const router = Router();
 router.use(requireAuth);
@@ -243,12 +244,14 @@ router.post(
     const existing = await checkIdempotencyKey(req);
     if (existing) return res.status(existing.statusCode).json(existing.responseBody);
 
-    const { destination, amount, categoryId } = z
-      .object({ destination: z.string().min(3), amount: z.number().positive(), categoryId: z.string().min(1) })
+    const { destination, amount, categoryId, projectId } = z
+      .object({ destination: z.string().min(3), amount: z.number().positive(), categoryId: z.string().min(1), projectId: z.string().min(1).nullable().optional() })
       .parse(req.body);
     await requireKycIfOverThreshold(req.userId, amount);
 
     const card = await myCard(req.userId);
+    // Validate the project BEFORE any money moves: a payment must never succeed and then fail to be filed.
+    await assertProjectForTransaction(req.userId, projectId, (await prisma.walletMember.findFirstOrThrow({ where: { userId: req.userId } })).walletId);
     const rail = getPaymentRailProvider();
     const recipient = await rail.resolveRecipient(destination);
     const payment = await rail.initiatePayment({ destination, amount, currency: "TZS" });
@@ -272,6 +275,7 @@ router.post(
         source: "lipa",
         reference,
         status: "completed",
+        projectId: projectId || null,
       },
     });
     const body = { card: snapshot, transaction, payment, reference };
@@ -289,10 +293,11 @@ router.post(
     const existing = await checkIdempotencyKey(req);
     if (existing) return res.status(existing.statusCode).json(existing.responseBody);
 
-    const { control, amount, biller, categoryId } = z
-      .object({ control: z.string().min(6), amount: z.number().positive(), biller: z.string().min(1), categoryId: z.string().min(1) })
+    const { control, amount, biller, categoryId, projectId } = z
+      .object({ control: z.string().min(6), amount: z.number().positive(), biller: z.string().min(1), categoryId: z.string().min(1), projectId: z.string().min(1).nullable().optional() })
       .parse(req.body);
     await requireKycIfOverThreshold(req.userId, amount);
+    await assertProjectForTransaction(req.userId, projectId, (await prisma.walletMember.findFirstOrThrow({ where: { userId: req.userId } })).walletId); // before any debit
 
     const quote = await quoteFee({ userId: req.userId, transactionTypeCode: "GEPG", amount, currency: "TZS", channel: "MOBILE_APP", accountType: "PERSONAL" });
     const totalDebit = Number(quote.totalDebit);
@@ -303,7 +308,7 @@ router.post(
     const requester = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
     const reference = generatePaymentReference();
     const transaction = await prisma.transaction.create({
-      data: { walletId: wallet.walletId, categoryId, amount: -Math.abs(totalDebit), merchant: biller, date: new Date(), loggedByUserId: req.userId, loggedByName: requester.firstName, source: "gepg", reference, status: "completed" },
+      data: { walletId: wallet.walletId, categoryId, amount: -Math.abs(totalDebit), merchant: biller, date: new Date(), loggedByUserId: req.userId, loggedByName: requester.firstName, source: "gepg", reference, status: "completed", projectId: projectId || null },
     });
     await collectFee(quote.id, reference).catch((err) => console.error("Fee collection failed", err)); // best-effort, never blocks a payment that already succeeded
     const body = { card: snapshot, transaction, reference, fee: { mitaPesaFee: Number(quote.mitaPesaFee), tax: Number(quote.tax) } };
@@ -321,10 +326,11 @@ router.post(
     const existing = await checkIdempotencyKey(req);
     if (existing) return res.status(existing.statusCode).json(existing.responseBody);
 
-    const { meter, amount, categoryId } = z
-      .object({ meter: z.string().min(6), amount: z.number().positive(), categoryId: z.string().min(1) })
+    const { meter, amount, categoryId, projectId } = z
+      .object({ meter: z.string().min(6), amount: z.number().positive(), categoryId: z.string().min(1), projectId: z.string().min(1).nullable().optional() })
       .parse(req.body);
     await requireKycIfOverThreshold(req.userId, amount);
+    await assertProjectForTransaction(req.userId, projectId, (await prisma.walletMember.findFirstOrThrow({ where: { userId: req.userId } })).walletId); // before any debit
 
     const quote = await quoteFee({ userId: req.userId, transactionTypeCode: "LUKU", amount, currency: "TZS", channel: "MOBILE_APP", accountType: "PERSONAL" });
     const totalDebit = Number(quote.totalDebit);
@@ -336,7 +342,7 @@ router.post(
     const requester = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
     const reference = generatePaymentReference();
     const transaction = await prisma.transaction.create({
-      data: { walletId: wallet.walletId, categoryId, amount: -Math.abs(totalDebit), merchant: `LUKU Meter ${meter}`, date: new Date(), loggedByUserId: req.userId, loggedByName: requester.firstName, source: "luku", reference, status: "completed" },
+      data: { walletId: wallet.walletId, categoryId, amount: -Math.abs(totalDebit), merchant: `LUKU Meter ${meter}`, date: new Date(), loggedByUserId: req.userId, loggedByName: requester.firstName, source: "luku", reference, status: "completed", projectId: projectId || null },
     });
     await collectFee(quote.id, reference).catch((err) => console.error("Fee collection failed", err));
     const body = { card: snapshot, transaction, token, reference, fee: { mitaPesaFee: Number(quote.mitaPesaFee), tax: Number(quote.tax) } };
