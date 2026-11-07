@@ -36,6 +36,11 @@ const LABELS = {
   analytics_credit_pack_size: "AI analytics credit pack — questions per purchase",
   analytics_credit_pack_price_tzs: "AI analytics credit pack — price (TZS)",
   analytics_credit_purchase_simulated_failure_rate: "AI analytics purchase — simulated decline rate (%)",
+  reminder_enabled: "Daily expense reminder — on/off",
+  reminder_default_time: "Daily reminder — default time",
+  reminder_max_ignored: "Daily reminder — stop after this many ignored",
+  reminder_catchup_hours: "Daily reminder — catch-up window (hours)",
+  reminder_utc_offset_minutes: "Daily reminder — time zone offset (minutes)",
 };
 const HELP = {
   household_max_members: "Caps how many people can be invited to a single shared wallet.",
@@ -70,6 +75,11 @@ const HELP = {
   analytics_promo_free_until: "Leave blank for no active promotion. Set a future date (YYYY-MM-DD) to make AI analytics free and unlimited for every customer until that date — the monthly spend ceiling above still applies even during a promotion.",
   analytics_credit_pack_size: "How many extra AI analytics questions one purchase unlocks. These never expire, unlike the free monthly allowance.",
   analytics_credit_pack_price_tzs: "Price of one AI analytics credit pack, in TZS.",
+  reminder_enabled: "\"true\" or \"false\" — master switch for the daily \"add today's expenses\" reminder. Customers choose their own time and days in the app; turning this off stops all of them immediately.",
+  reminder_default_time: "HH:MM (24-hour), used until a customer picks their own time. Example: 20:00.",
+  reminder_max_ignored: "After this many reminders in a row with no expense logged afterwards, reminders pause for that customer until they log something or change the setting. 0 = never pause.",
+  reminder_catchup_hours: "If the server was restarting at the chosen time, a missed reminder is still sent within this many hours; after that it is skipped for the day.",
+  reminder_utc_offset_minutes: "Minutes ahead of UTC. Tanzania is 180 (UTC+3, no daylight saving).",
   analytics_credit_purchase_simulated_failure_rate: "0-100. Injects simulated card declines on the mock payment gateway, to test the failure-handling path before a real gateway is connected.",
 };
 
