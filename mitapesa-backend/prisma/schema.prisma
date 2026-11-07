@@ -240,9 +240,36 @@ model Transaction {
   source         String       @default("manual") // manual | scan | voice | import | lipa | gepg | luku | topup_gateway | topup_oct | virtual_card_lipa | virtual_card_gepg | virtual_card_luku | virtual_card_topup | virtual_card
   reference      String?      // provider/transaction reference — generated server-side, shown on receipts
   status         String       @default("completed") // completed | pending | failed — failed transactions are never actually persisted today (validated before debit), reserved for when a real provider can return "pending"
+  // Optional project this transaction is tracked under (house build, renovation…).
+  // Project transactions still move the balance, but are excluded from everyday
+  // spending analytics (budgets, Home totals, insights unless "Include projects").
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId      String?
   createdAt      DateTime     @default(now())
 
   @@index([walletId, date])
+  @@index([projectId])
+}
+
+// A goal-sized body of spending (house build, wedding, school fees) tracked on
+// its own page. walletId null = personal project visible only to its owner;
+// walletId set = shared-wallet project visible to every member of that wallet.
+model Project {
+  id         String    @id @default(cuid())
+  userId     String // creator / owner
+  walletId   String?
+  name       String
+  budget     Decimal?  @db.Decimal(14, 2)
+  targetDate DateTime?
+  status     String    @default("active") // active | done | archived
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  transactions Transaction[]
+
+  @@index([userId])
+  @@index([walletId])
 }
 
 model Card {
@@ -618,6 +645,7 @@ model QrPayment {
   currency             String    @default("TZS")
   amount               Decimal   @db.Decimal(14, 2)
   isOnUs               Boolean
+  projectId           String? // project this payment is filed under once completed (see Project)
   categoryId           String    // needed to post the ledger Transaction, at initiation or later pending-resolution
   feeAmount            Decimal   @default(0) @db.Decimal(14, 2) // charged on top of amount for off-us transfers per FinancialInstitution rules; 0 for on-us
   mitaPesaFeeAmount    Decimal   @default(0) @db.Decimal(14, 2) // MitaPesa's own platform fee, from the Dynamic Fee Engine
