@@ -7,6 +7,7 @@ const { asyncHandler } = require("../../middleware/errorHandler");
 const { requirePayModuleEnabled } = require("../../middleware/payModule");
 const { notFound, forbidden, badRequest } = require("../../lib/errors");
 const { writeAudit } = require("../../lib/audit");
+const { assertProjectForTransaction } = require("../../lib/projects");
 const { checkIdempotencyKey, saveIdempotentResponse } = require("../../lib/idempotency");
 const { generatePaymentReference } = require("../../lib/reference");
 const { encryptField, decryptField } = require("../../lib/crypto");
@@ -75,7 +76,7 @@ const SERVICE_LABELS = { lipa: "Lipa", gepg: "GePG", luku: "LUKU", topup: "Mobil
 // the holder's own personal wallet ledger; add-on-card spend lands in the
 // shared household wallet ledger — both are real Transaction rows, feeding
 // the same activity/insights machinery the primary card uses).
-async function finalizeSpend({ card, amount, merchant, categoryId, serviceType, userId }) {
+async function finalizeSpend({ card, amount, merchant, categoryId, serviceType, userId, projectId }) {
   const reference = generatePaymentReference();
   const activityLabel = serviceType === "other" ? `Paid ${merchant}` : `${SERVICE_LABELS[serviceType]}: ${merchant}`;
   const requester = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
@@ -95,6 +96,7 @@ async function finalizeSpend({ card, amount, merchant, categoryId, serviceType, 
         source: serviceType === "other" ? "virtual_card" : `virtual_card_${serviceType}`,
         reference,
         status: "completed",
+        projectId: projectId || null,
       },
     }),
   ]);
@@ -509,7 +511,8 @@ router.post(
     const existing = await checkIdempotencyKey(req);
     if (existing) return res.status(existing.statusCode).json(existing.responseBody);
 
-    const { destination, amount, categoryId } = z.object({ destination: z.string().min(3), amount: z.number().positive(), categoryId: z.string().min(1) }).parse(req.body);
+    const { destination, amount, categoryId, projectId } = z.object({ destination: z.string().min(3), amount: z.number().positive(), categoryId: z.string().min(1), projectId: z.string().min(1).nullable().optional() }).parse(req.body);
+    await assertProjectForTransaction(req.userId, projectId, card.walletId); // before any money moves
     await assertSpendable(card, { serviceType: "lipa", categoryId, amount });
     await requireKycIfOverThreshold(req.userId, amount);
 
@@ -518,7 +521,7 @@ router.post(
     const payment = await rail.initiatePayment({ destination, amount, currency: "TZS" });
     if (payment.status !== "completed") throw badRequest("Payment did not complete", payment);
 
-    const { card: updated, transaction, reference } = await finalizeSpend({ card, amount, merchant: recipient.name, categoryId, serviceType: "lipa", userId: req.userId });
+    const { card: updated, transaction, reference } = await finalizeSpend({ card, amount, merchant: recipient.name, categoryId, serviceType: "lipa", userId: req.userId, projectId });
     const body = { card: serializeCard(updated, req.userId), transaction, reference, payment };
     await saveIdempotentResponse(req, 200, body);
     await writeAudit(req.userId, "virtualcard.pay.lipa", { ip: req.ip, cardId: card.id, amount, destination, reference });
@@ -535,14 +538,15 @@ router.post(
     const existing = await checkIdempotencyKey(req);
     if (existing) return res.status(existing.statusCode).json(existing.responseBody);
 
-    const { control, amount, biller, categoryId } = z.object({ control: z.string().min(6), amount: z.number().positive(), biller: z.string().min(1), categoryId: z.string().min(1) }).parse(req.body);
+    const { control, amount, biller, categoryId, projectId } = z.object({ control: z.string().min(6), amount: z.number().positive(), biller: z.string().min(1), categoryId: z.string().min(1), projectId: z.string().min(1).nullable().optional() }).parse(req.body);
+    await assertProjectForTransaction(req.userId, projectId, card.walletId); // before any money moves
     await requireKycIfOverThreshold(req.userId, amount);
 
     const quote = await quoteFee({ userId: req.userId, transactionTypeCode: "GEPG", amount, currency: "TZS", channel: "MOBILE_APP", accountType: "SHARED" });
     const totalDebit = Number(quote.totalDebit);
     await assertSpendable(card, { serviceType: "gepg", categoryId, amount: totalDebit });
 
-    const { card: updated, transaction, reference } = await finalizeSpend({ card, amount: totalDebit, merchant: biller, categoryId, serviceType: "gepg", userId: req.userId });
+    const { card: updated, transaction, reference } = await finalizeSpend({ card, amount: totalDebit, merchant: biller, categoryId, serviceType: "gepg", userId: req.userId, projectId });
     await collectFee(quote.id, reference).catch((err) => console.error("Fee collection failed", err));
     const body = { card: serializeCard(updated, req.userId), transaction, reference, fee: { mitaPesaFee: Number(quote.mitaPesaFee), tax: Number(quote.tax) } };
     await saveIdempotentResponse(req, 200, body);
@@ -560,14 +564,15 @@ router.post(
     const existing = await checkIdempotencyKey(req);
     if (existing) return res.status(existing.statusCode).json(existing.responseBody);
 
-    const { meter, amount, categoryId } = z.object({ meter: z.string().min(6), amount: z.number().positive(), categoryId: z.string().min(1) }).parse(req.body);
+    const { meter, amount, categoryId, projectId } = z.object({ meter: z.string().min(6), amount: z.number().positive(), categoryId: z.string().min(1), projectId: z.string().min(1).nullable().optional() }).parse(req.body);
+    await assertProjectForTransaction(req.userId, projectId, card.walletId); // before any money moves
     await requireKycIfOverThreshold(req.userId, amount);
 
     const quote = await quoteFee({ userId: req.userId, transactionTypeCode: "LUKU", amount, currency: "TZS", channel: "MOBILE_APP", accountType: "SHARED" });
     const totalDebit = Number(quote.totalDebit);
     await assertSpendable(card, { serviceType: "luku", categoryId, amount: totalDebit });
 
-    const { card: updated, transaction, reference } = await finalizeSpend({ card, amount: totalDebit, merchant: `LUKU Meter ${meter}`, categoryId, serviceType: "luku", userId: req.userId });
+    const { card: updated, transaction, reference } = await finalizeSpend({ card, amount: totalDebit, merchant: `LUKU Meter ${meter}`, categoryId, serviceType: "luku", userId: req.userId, projectId });
     const token = Array.from({ length: 4 }, () => crypto.randomInt(1000, 9999)).join("-");
     await collectFee(quote.id, reference).catch((err) => console.error("Fee collection failed", err));
     const body = { card: serializeCard(updated, req.userId), transaction, reference, token, fee: { mitaPesaFee: Number(quote.mitaPesaFee), tax: Number(quote.tax) } };
@@ -588,13 +593,14 @@ router.post(
     const existing = await checkIdempotencyKey(req);
     if (existing) return res.status(existing.statusCode).json(existing.responseBody);
 
-    const { amount, merchant, categoryId, serviceType } = z
-      .object({ amount: z.number().positive(), merchant: z.string().min(1), categoryId: z.string().min(1), serviceType: z.enum(["topup", "other"]).default("other") })
+    const { amount, merchant, categoryId, serviceType, projectId } = z
+      .object({ amount: z.number().positive(), merchant: z.string().min(1), categoryId: z.string().min(1), serviceType: z.enum(["topup", "other"]).default("other"), projectId: z.string().min(1).nullable().optional() })
       .parse(req.body);
+    await assertProjectForTransaction(req.userId, projectId, card.walletId); // before any money moves
     await assertSpendable(card, { serviceType, categoryId, amount });
     await requireKycIfOverThreshold(req.userId, amount);
 
-    const { card: updated, transaction, reference } = await finalizeSpend({ card, amount, merchant, categoryId, serviceType, userId: req.userId });
+    const { card: updated, transaction, reference } = await finalizeSpend({ card, amount, merchant, categoryId, serviceType, userId: req.userId, projectId });
     const body = { card: serializeCard(updated, req.userId), transaction, reference };
     await saveIdempotentResponse(req, 200, body);
     await writeAudit(req.userId, "virtualcard.spend", { ip: req.ip, cardId: card.id, amount, merchant, serviceType, reference });
