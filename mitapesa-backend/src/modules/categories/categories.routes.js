@@ -4,6 +4,7 @@ const prisma = require("../../lib/prisma");
 const { requireAuth } = require("../../middleware/auth");
 const { asyncHandler } = require("../../middleware/errorHandler");
 const { badRequest, notFound, forbidden } = require("../../lib/errors");
+const { ensureProjectCategories } = require("../../lib/projects");
 
 const router = Router();
 router.use(requireAuth);
@@ -19,6 +20,7 @@ async function nextColor(userId) {
 router.get(
   "/",
   asyncHandler(async (req, res) => {
+    await ensureProjectCategories().catch((err) => console.error("Project categories setup failed", err)); // eslint-disable-line no-console
     const categories = await prisma.category.findMany({
       where: { OR: [{ userId: null }, { userId: req.userId }] },
       include: { subcategories: true },
