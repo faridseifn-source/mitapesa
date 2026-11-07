@@ -10,6 +10,7 @@ const { getSetting } = require("../../lib/settings");
 const { csvRow, sendCsv } = require("../../lib/csv");
 const { convertToTZS } = require("../../lib/currencyConversion");
 const referrals = require("../../lib/referrals");
+const { assertProjectForTransaction } = require("../../lib/projects");
 
 const router = Router();
 router.use(requireAuth);
@@ -25,6 +26,7 @@ const txInput = z.object({
   photoUrl: z.string().optional().nullable(),
   date: z.string(), // ISO date
   source: z.enum(["manual", "scan", "voice", "import", "lipa", "gepg", "luku"]).default("manual"),
+  projectId: z.string().min(1).nullable().optional(), // track under a project (excluded from everyday spending); null removes it
 });
 
 // GET /transactions?walletId=&from=&to=&category=&format=csv
@@ -47,7 +49,7 @@ router.get(
     const transactions = await prisma.transaction.findMany({
       where,
       orderBy: { date: "desc" },
-      include: { category: true, subcategory: true },
+      include: { category: true, subcategory: true, project: { select: { name: true } } },
     });
 
     if (req.query.format === "csv") {
@@ -60,7 +62,7 @@ router.get(
       out += csvRow(["Generated", new Date().toISOString()]);
       out += csvRow(["Total transactions", transactions.length]);
       out += csvRow([]);
-      out += csvRow(["Date", "Merchant", "Category", "Subcategory", "Type", "Amount TZS", "Note"]);
+      out += csvRow(["Date", "Merchant", "Category", "Subcategory", "Type", "Amount TZS", "Note", "Project"]);
       for (const tx of transactions) {
         out += csvRow([
           tx.date.toISOString().slice(0, 10),
@@ -70,6 +72,7 @@ router.get(
           Number(tx.amount) >= 0 ? "Income" : "Expense",
           Math.abs(Number(tx.amount)),
           tx.note || "",
+          tx.project?.name || "",
         ]);
       }
       return sendCsv(res, `mitapesa-transactions-${from}-to-${to}.csv`, out);
@@ -84,6 +87,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const input = txInput.parse(req.body);
     await assertWalletMember(req.userId, input.walletId);
+    await assertProjectForTransaction(req.userId, input.projectId, input.walletId);
 
     const requester = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
     const { currency, ...rest } = input;
@@ -106,7 +110,7 @@ router.post(
         loggedByUserId: req.userId,
         loggedByName: `${requester.firstName}`,
       },
-      include: { category: true, subcategory: true, wallet: true },
+      include: { category: true, subcategory: true, wallet: true, project: { select: { name: true } } },
     });
 
     // Only shared wallets notify — and only the OTHER members, never the
@@ -141,12 +145,14 @@ router.post(
     const items = z.array(txInput).min(1).parse(req.body.transactions);
     const walletIds = [...new Set(items.map((i) => i.walletId))];
     for (const walletId of walletIds) await assertWalletMember(req.userId, walletId);
+    for (const i of items) await assertProjectForTransaction(req.userId, i.projectId, i.walletId);
 
     const requester = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
     const created = await prisma.$transaction(
       items.map((input) =>
         prisma.transaction.create({
           data: { ...input, date: new Date(input.date), loggedByUserId: req.userId, loggedByName: requester.firstName, source: input.source === "manual" ? "import" : input.source },
+          include: { project: { select: { name: true } } },
         })
       )
     );
@@ -184,10 +190,13 @@ router.patch(
       }
     }
 
+    // Moving into a project (or out: projectId null). Moving out is always allowed, even from an archived project.
+    if (patch.projectId) await assertProjectForTransaction(req.userId, patch.projectId, patch.walletId || existing.walletId);
+
     const transaction = await prisma.transaction.update({
       where: { id: existing.id },
       data: { ...patch, ...(patch.date ? { date: new Date(patch.date) } : {}) },
-      include: { category: true, subcategory: true },
+      include: { category: true, subcategory: true, project: { select: { name: true } } },
     });
     res.json({ transaction });
   })
