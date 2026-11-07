@@ -10,7 +10,7 @@ const { getSetting } = require("../../lib/settings");
 const { csvRow, sendCsv } = require("../../lib/csv");
 const { convertToTZS } = require("../../lib/currencyConversion");
 const referrals = require("../../lib/referrals");
-const { assertProjectForTransaction } = require("../../lib/projects");
+const { assertProjectForTransaction, checkCategoryForProject } = require("../../lib/projects");
 
 const router = Router();
 router.use(requireAuth);
@@ -88,6 +88,7 @@ router.post(
     const input = txInput.parse(req.body);
     await assertWalletMember(req.userId, input.walletId);
     await assertProjectForTransaction(req.userId, input.projectId, input.walletId);
+    await checkCategoryForProject(input.categoryId, input.projectId, { strict: true });
 
     const requester = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
     const { currency, ...rest } = input;
@@ -145,7 +146,7 @@ router.post(
     const items = z.array(txInput).min(1).parse(req.body.transactions);
     const walletIds = [...new Set(items.map((i) => i.walletId))];
     for (const walletId of walletIds) await assertWalletMember(req.userId, walletId);
-    for (const i of items) await assertProjectForTransaction(req.userId, i.projectId, i.walletId);
+    for (const i of items) { await assertProjectForTransaction(req.userId, i.projectId, i.walletId); await checkCategoryForProject(i.categoryId, i.projectId, { strict: true }); }
 
     const requester = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
     const created = await prisma.$transaction(
@@ -192,6 +193,12 @@ router.patch(
 
     // Moving into a project (or out: projectId null). Moving out is always allowed, even from an archived project.
     if (patch.projectId) await assertProjectForTransaction(req.userId, patch.projectId, patch.walletId || existing.walletId);
+
+    // Project-only categories can't live on everyday transactions: reject an explicit bad choice, and when a
+    // transaction is moved out of its project while still using a project category, fall back to "Other".
+    const effectiveProjectId = patch.projectId !== undefined ? patch.projectId : existing.projectId;
+    const catCheck = await checkCategoryForProject(patch.categoryId || existing.categoryId, effectiveProjectId, { strict: !!patch.categoryId });
+    if (catCheck.changed) { patch.categoryId = catCheck.categoryId; patch.subcategoryId = null; }
 
     const transaction = await prisma.transaction.update({
       where: { id: existing.id },
