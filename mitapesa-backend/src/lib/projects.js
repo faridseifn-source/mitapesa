@@ -12,6 +12,63 @@ const { forbidden, notFound, badRequest } = require("./errors");
 
 const STATUSES = ["active", "done", "archived"];
 
+// Global categories offered only inside projects (every category used by a project template). Created on first use,
+// so no manual seed run is needed.
+const { ALL_CATEGORY_NAMES, colorFor: projectCategoryColor } = require("./projectTemplates");
+const PROJECT_CATEGORIES = ALL_CATEGORY_NAMES.map((name) => ({ name, color: projectCategoryColor(name) }));
+let projectCategoriesEnsured = false;
+async function ensureProjectCategories() {
+  if (projectCategoriesEnsured) return;
+  for (const c of PROJECT_CATEGORIES) {
+    const exists = await prisma.category.findFirst({ where: { name: c.name, userId: null } });
+    if (!exists) await prisma.category.create({ data: { name: c.name, color: c.color, scope: "project", userId: null } });
+  }
+  projectCategoriesEnsured = true;
+}
+function _resetEnsureFlag() { projectCategoriesEnsured = false; }
+
+// Turns a list of category names into category ids for a project: reuse a global or the user's own project category of
+// that name, otherwise create a new user-owned PROJECT category (a custom one the customer typed). Never touches
+// everyday categories, even if the name matches one (it would then be a different, project-only category).
+async function resolveProjectCategoryIds(userId, names) {
+  const clean = [];
+  for (const raw of names || []) {
+    const n = String(raw || "").trim().replace(/\s+/g, " ").slice(0, 40);
+    if (n.length >= 2 && !clean.some((x) => x.toLowerCase() === n.toLowerCase())) clean.push(n);
+    if (clean.length >= 12) break;
+  }
+  await ensureProjectCategories();
+  const ids = [];
+  for (const name of clean) {
+    let cat = await prisma.category.findFirst({ where: { name, scope: "project", userId: null } })
+      || await prisma.category.findFirst({ where: { name, scope: "project", userId } });
+    if (!cat) {
+      const used = (await prisma.category.findMany({ where: { scope: "project", userId }, select: { color: true } })).length;
+      const color = ["#B5546B", "#4F8FA3", "#9A7B2F", "#6C8F5C", "#8E5B7F", "#C97B63"][used % 6];
+      try {
+        cat = await prisma.category.create({ data: { name, scope: "project", userId, color } });
+      } catch (err) {
+        // The customer already has an everyday category with this exact name (unique per user): keep both, tell them apart.
+        if (err && err.code === "P2002") cat = await prisma.category.create({ data: { name: `${name} (project)`, scope: "project", userId, color } });
+        else throw err;
+      }
+    }
+    ids.push(cat.id);
+  }
+  return ids;
+}
+
+// Project-scope categories belong to project spending only.
+//  strict: reject (create, bulk, or an explicit category change).
+//  otherwise (a transaction moved OUT of a project): fall back to the everyday "Other" category.
+async function checkCategoryForProject(categoryId, projectId, { strict }) {
+  const cat = categoryId ? await prisma.category.findUnique({ where: { id: categoryId } }) : null;
+  if (!cat || cat.scope !== "project" || projectId) return { categoryId, changed: false };
+  if (strict) throw badRequest("That category is only for project spending. Choose a project, or pick an everyday category.");
+  const other = await prisma.category.findFirst({ where: { name: "Other", userId: null } });
+  return { categoryId: other ? other.id : categoryId, changed: !!other };
+}
+
 async function isWalletMember(userId, walletId) {
   const m = await prisma.walletMember.findUnique({ where: { walletId_userId: { walletId, userId } } });
   return !!m;
@@ -106,4 +163,4 @@ function summarizeProject(project, rows, now = new Date()) {
   return { spent, funded, count: rows.length, budget, remaining, pctUsed, byCategory, weekly, biggest, avgWeeklySpend, weeksToBudget, daysLeft, health };
 }
 
-module.exports = { STATUSES, loadProjectForUser, assertProjectForTransaction, summarizeProject, weekStartKey, isWalletMember };
+module.exports = { resolveProjectCategoryIds, PROJECT_CATEGORIES, ensureProjectCategories, checkCategoryForProject, _resetEnsureFlag, STATUSES, loadProjectForUser, assertProjectForTransaction, summarizeProject, weekStartKey, isWalletMember };

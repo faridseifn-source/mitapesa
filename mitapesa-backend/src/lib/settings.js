@@ -166,6 +166,15 @@ const DEFAULTS = {
   analytics_credit_pack_price_tzs: "3000",
   analytics_credit_purchase_simulated_failure_rate: "0",
 
+  // AI help when starting a project ("Suggest categories"). Same cost controls as the other AI features, its own
+  // independent allowance. Credit pack size/price are 0 so no purchase is ever offered (see the iOS in-app purchase decision).
+  project_ai_enabled: "true",
+  project_ai_free_monthly_limit: "5",
+  project_ai_monthly_spend_ceiling_usd: "5",
+  project_ai_promo_free_until: "",
+  project_ai_credit_pack_size: "0",
+  project_ai_credit_pack_price_tzs: "0",
+
   // Daily "log today's expenses" reminder — see lib/reminders.js. Customers
   // pick their own time/days in the app; these are the system-wide switches
   // and defaults so the behaviour can be tuned without a code change.
