@@ -82,6 +82,9 @@ model User {
   termsAcceptedAt DateTime?
   termsVersion    String?
   termsAcceptedIp String?
+  // When the customer ticked "I am 18 or older" at registration (null for
+  // accounts created before this was asked, or from an older app build).
+  adultConfirmedAt DateTime?
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -1590,4 +1593,23 @@ model ReferralAppeal {
 
   @@index([status, createdAt])
   @@index([referralId])
+}
+
+
+// ------------------------------ Daily expense reminder ------------------------------
+// One row per customer who has changed (or been sent) a reminder. No row means
+// "defaults": on, at reminder_default_time, every day. Deliberately a plain
+// userId (no relation) like the referral tables, so it never blocks account
+// deletion or schema changes elsewhere.
+model ReminderSetting {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  enabled        Boolean   @default(true)
+  time           String    @default("20:00") // "HH:MM" local time (UTC offset from reminder_utc_offset_minutes)
+  days           String    @default("")      // comma list of weekdays 0=Sun..6=Sat; empty = every day
+  lastSentAt     DateTime?
+  lastSentDate   String?   // local "YYYY-MM-DD" of the last reminder, so at most one a day
+  ignoredCount   Int       @default(0)       // consecutive reminders with no expense logged afterwards
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
