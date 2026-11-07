@@ -102,6 +102,7 @@ function makeModel(name, store) {
       const clash = uniqueClash({ ...row, ...data }, row.id); if (clash) throw clash;
       apply(row, data); row.updatedAt = new Date(); return { ...row };
     },
+    async delete({ where }) { const i = rows().findIndex((r) => matches(r, resolveWhere(where))); if (i < 0) throw new Error("not found"); return rows().splice(i, 1)[0]; },
     async updateMany({ where = {}, data }) {
       const hit = rows().filter((r) => matches(r, where));
       hit.forEach((r) => { apply(r, data); r.updatedAt = new Date(); });
